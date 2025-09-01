@@ -1,0 +1,69 @@
+# ---------------------
+# OS / 환경 공통
+# ---------------------
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+
+# 로그 파일
+*.log
+*.log.*
+
+# 보안 및 환경
+.env
+*.pem
+*.crt
+*.key
+
+# ---------------------
+# 빌드 아티팩트
+# ---------------------
+.gradle
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# ---------------------
+# IDE - STS
+# ---------------------
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+# ---------------------
+# IDE - IntelliJ IDEA
+# ---------------------
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+
+# ---------------------
+# IDE - NetBeans
+# ---------------------
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+# ---------------------
+# IDE - VSCode
+# ---------------------
+.vscode/
+*.xml
