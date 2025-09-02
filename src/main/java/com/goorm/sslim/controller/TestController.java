@@ -15,10 +15,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/test")
 public class TestController {
 
-    @GetMapping("/excute")
+    @GetMapping("/execute")
     public ApiResponse<Void> test(@RequestParam String error) {
         if(error.equals("yes")) {
-            System.out.println("------------------------------");
             throw new TestException(ErrorCode._BAD_REQUEST);
         }
 
