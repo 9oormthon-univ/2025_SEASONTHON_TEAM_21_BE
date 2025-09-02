@@ -1,6 +1,7 @@
 package com.goorm.sslim.global.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.goorm.sslim.global.code.ErrorCode;
 import com.goorm.sslim.global.code.ResponseCode;
@@ -12,7 +13,8 @@ import lombok.Getter;
 @JsonPropertyOrder({"isSuccess", "code", "message", "result"})
 public class ApiResponse<T> {
 
-    private final boolean isSuccess;
+    @JsonProperty("isSuccess")
+    private final boolean success;
     private final String code;
     private final String message;
     @JsonInclude(JsonInclude.Include.NON_NULL)
