@@ -2,6 +2,7 @@ package com.goorm.sslim.global.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.goorm.sslim.global.code.ErrorCode;
 import com.goorm.sslim.global.code.ResponseCode;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
