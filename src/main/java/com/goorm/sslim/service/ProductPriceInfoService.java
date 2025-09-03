@@ -2,6 +2,7 @@ package com.goorm.sslim.service;
 
 import com.goorm.sslim.foodcost.dto.response.ProductPriceInfoDTO;
 import com.goorm.sslim.foodcost.dto.response.ProductPriceInfoResponse;
+import com.goorm.sslim.foodcost.repository.FoodCostRepository;
 import com.goorm.sslim.global.code.ErrorCode;
 import com.goorm.sslim.global.exception.GeneralException;
 import jakarta.xml.bind.JAXBContext;
@@ -22,12 +23,11 @@ public class ProductPriceInfoService {
 
     @Value("${spring.openapi.product-price.service-key}")
     private String serviceKey;
-
     private static final String BASE_URL =
             "http://openapi.price.go.kr/openApiImpl/ProductPriceInfoService/getProductPriceInfoSvc.do";
+    private final FoodCostRepository foodCostRepository;
 
     public List<ProductPriceInfoDTO> fetchProductPriceInfo(String goodInspectDay, String goodId) throws JAXBException {
-        // 파라미터 구성
         String url = UriComponentsBuilder.fromHttpUrl(BASE_URL)
                 .queryParam("goodInspectDay", goodInspectDay)
                 .queryParam("goodId", goodId)
@@ -40,7 +40,6 @@ public class ProductPriceInfoService {
         if(xmlResponse == null) {
             throw new GeneralException(ErrorCode._NULL_API);
         }
-
 
         // 2. JAXB로 XML -> DTO List로 변환
         JAXBContext jaxbContext = JAXBContext.newInstance(ProductPriceInfoResponse.class);
