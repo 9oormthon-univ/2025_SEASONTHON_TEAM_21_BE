@@ -35,7 +35,6 @@ public class PublicTransportService {
         JsonNode root = web.get()
                 .uri(uri -> uri.path("/uddi:351668f4-a029-4006-8f77-b6c02e422165")
                         .queryParam("serviceKey", "beea3b20dcc31046c894f13d45fee96bf3b85d023319980a8878e6a47094e77d")
-                        .queryParam("page", 1)
                         .queryParam("perPage", 1000)
                         .build())
                 .retrieve()
@@ -96,7 +95,7 @@ public class PublicTransportService {
 
     // 지표명 스위칭 (공백/언더스코어 혼용 대비)
     private void mapMetric(Acc a, String metric, BigDecimal v) {
-        String m = metric.replace(" ", "_"); // "주이용교통수단 도시철도(%)" 케이스 대응
+        String m = metric.replace(" ", "_");
         switch (m) {
             case "1주간대중교통이용횟수(회)" -> a.weeklyUsageCnt = v;
             case "한달평균대중교통비용(원)"   -> a.monthlyCostWon = v;
@@ -108,7 +107,7 @@ public class PublicTransportService {
             case "환승서비스이용률(%)"         -> a.transferServiceUsagePct = v;
             case "환승횟수(회)"                -> a.transferCount = v;
             case "환승이동시간(분)"            -> a.transferMoveTimeMin = v;
-            case "환승대기시간(분)"            -> a.transferWaitTimeMin = v; // 현재 입력 데이터엔 없음
+            case "환승대기시간(분)"            -> a.transferWaitTimeMin = v;
             default -> {} // 기타는 무시
         }
     }

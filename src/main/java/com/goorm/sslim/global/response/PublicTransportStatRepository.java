@@ -41,7 +41,7 @@ public interface PublicTransportStatRepository extends JpaRepository<PublicTrans
           transfer_count              = VALUES(transfer_count),
           transfer_move_time_min      = VALUES(transfer_move_time_min),
           transfer_wait_time_min      = VALUES(transfer_wait_time_min),
-          updated_at                  = CURRENT_TIMESTAMP
+          fetched_at                  = CURRENT_TIMESTAMP
         """, nativeQuery = true)
     int upsert(
             @Param("regionCode") String regionCode,

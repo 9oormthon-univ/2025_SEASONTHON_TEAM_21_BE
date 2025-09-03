@@ -57,7 +57,7 @@ public class PublicTransportStat {
     @Column(name="transfer_wait_time_min")
     private BigDecimal transferWaitTimeMin;
 
-    @Column(name="updated_at", insertable=false, updatable=false,
+    @Column(name="fetched_at", insertable=false, updatable=false,
             columnDefinition="timestamp default current_timestamp on update current_timestamp")
-    private Timestamp updatedAt;
+    private Timestamp fetchedAt;
 }
