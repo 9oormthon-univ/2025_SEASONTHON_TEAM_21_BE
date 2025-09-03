@@ -1,10 +1,14 @@
 package com.goorm.sslim.dto.response;
 
-import lombok.Getter;
-import lombok.ToString;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@Getter
-@ToString
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class ProductPriceInfoDTO {
 
     private String goodInspectDay;   // 상품_조사_일
