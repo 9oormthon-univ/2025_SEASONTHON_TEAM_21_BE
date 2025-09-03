@@ -1,4 +1,4 @@
-package com.goorm.sslim.dto.response;
+package com.goorm.sslim.foodcost.dto.response;
 
 import jakarta.xml.bind.annotation.XmlElement;
 import jakarta.xml.bind.annotation.XmlRootElement;

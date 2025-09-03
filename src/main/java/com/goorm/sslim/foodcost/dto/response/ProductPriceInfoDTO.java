@@ -1,4 +1,4 @@
-package com.goorm.sslim.dto.response;
+package com.goorm.sslim.foodcost.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
