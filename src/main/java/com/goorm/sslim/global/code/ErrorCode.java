@@ -13,7 +13,10 @@ public enum ErrorCode {
     _BAD_REQUEST(HttpStatus.BAD_REQUEST,"COMMON_400", "잘못된 요청입니다."),
     _UNAUTHORIZED(HttpStatus.UNAUTHORIZED,"COMMON_401", "인증이 필요합니다."),
     _FORBIDDEN(HttpStatus.FORBIDDEN, "COMMON_403", "권한이 없습니다."),
-    _NOT_FOUND(HttpStatus.NOT_FOUND, "COMMON_404", "대상을 찾을 수 없습니다.");
+    _NOT_FOUND(HttpStatus.NOT_FOUND, "COMMON_404", "대상을 찾을 수 없습니다."),
+
+    //API
+    _NULL_API(HttpStatus.NOT_FOUND, "API_404", "API 응답이 null입니다.");
 
     private final HttpStatus httpStatus;
     private final String code;
