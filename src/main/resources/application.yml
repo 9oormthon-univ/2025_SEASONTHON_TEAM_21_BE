@@ -28,3 +28,7 @@ spring:
 #    init:
 #      mode: always
 #      data-locations: classpath:data.sql # 앱 실행 시, 초기 삽입 데이터
+
+custom:
+  api:
+    officetel-key: "2d4ea1d47d8bb9f264dac2c60c50527ce80b29540db5eaaa1e026f22f629e9de"
