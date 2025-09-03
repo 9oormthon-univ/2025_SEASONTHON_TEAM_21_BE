@@ -4,11 +4,10 @@ spring:
 
   server:
     port: 8080
-
   datasource:
-    url: ${DB_URL}
-    username: ${DB_USER}
-    password: ${DB_PASSWORD}
+    url: jdbc:mysql://localhost:3306/SSLIM?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    username: root
+    password: 1234
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
@@ -29,6 +28,6 @@ spring:
 #      mode: always
 #      data-locations: classpath:data.sql # 앱 실행 시, 초기 삽입 데이터
 
-custom:
-  api:
-    officetel-key: "2d4ea1d47d8bb9f264dac2c60c50527ce80b29540db5eaaa1e026f22f629e9de"
+apis:
+  rtms:
+    service-key: "2d4ea1d47d8bb9f264dac2c60c50527ce80b29540db5eaaa1e026f22f629e9de"

@@ -26,6 +26,9 @@ public class HousingCostDto {
 
     @XmlElement(name = "sggNm")
     private String sggNm;
+    
+    @XmlElement(name = "sggCd")
+    private String sggCd;
 
     @XmlElement(name = "umdNm")
     private String umdNm;
