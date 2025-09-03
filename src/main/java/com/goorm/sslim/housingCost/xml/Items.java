@@ -2,7 +2,7 @@ package com.goorm.sslim.housingCost.xml;
 
 import java.util.List;
 
-import com.goorm.sslim.housingCost.dto.OfficetelRentDto;
+import com.goorm.sslim.housingCost.dto.HousingCostDto;
 
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
@@ -16,6 +16,6 @@ import lombok.NoArgsConstructor;
 public class Items {
 	
     @XmlElement(name = "item") 
-    private List<OfficetelRentDto> item;
+    private List<HousingCostDto> item;
     
 }
