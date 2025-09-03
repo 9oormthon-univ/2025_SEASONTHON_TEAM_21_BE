@@ -3,43 +3,37 @@ package com.goorm.sslim.housingCost.dto;
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
 import jakarta.xml.bind.annotation.XmlElement;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @XmlAccessorType(XmlAccessType.FIELD)
-public class OfficetelRentDto {
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class HousingCostDto {
 
-	@XmlElement(name = "buildYear")
-    private String buildYear; // 건축년도
-    
-    @XmlElement(name = "dealDay")
-    private String dealDay; // 계약일
-    
-    @XmlElement(name = "dealMonth")
-    private String dealMonth; // 계약월
-    
-    @XmlElement(name = "dealYear")
-    private String dealYear; // 계약년도
-    
+	@XmlElement(name = "excluUseAr")
+    private double exclusiveArea;
+
     @XmlElement(name = "deposit")
-    private String deposit; // 보증금액 (만원)
-    
-    @XmlElement(name = "excluUseAr")
-    private double excluUseAr; // 전용면적
-    
+    private double deposit;
+
     @XmlElement(name = "monthlyRent")
-    private String monthlyRent; // 월세금액 (만원)
-    
-    @XmlElement(name = "offiNm")
-    private String offiNm; // 단지명
-    
-    @XmlElement(name = "sggCd")
-    private String sggCd; // 지역코드
-    
+    private double monthlyRent;
+
     @XmlElement(name = "sggNm")
-    private String sggNm; // 시군구
-    
+    private String sggNm;
+
     @XmlElement(name = "umdNm")
-    private String umdNm; // 법정동
+    private String umdNm;
+
+    @XmlElement(name = "dealYear")
+    private int dealYear;
+
+    @XmlElement(name = "dealMonth")
+    private int dealMonth;
 	
 }
