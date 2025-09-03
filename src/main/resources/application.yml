@@ -23,6 +23,10 @@ spring:
       hibernate:
         format_sql: true
 
+  openapi:
+    product-price:
+      service-key: ${PRODUCT_PRICE_SERVICE_KEY}
+
 #    defer-datasource-initialization: true
 #  sql:
 #    init:
