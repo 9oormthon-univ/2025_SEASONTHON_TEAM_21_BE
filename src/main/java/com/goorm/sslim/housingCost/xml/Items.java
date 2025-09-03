@@ -15,7 +15,7 @@ import lombok.NoArgsConstructor;
 @XmlAccessorType(XmlAccessType.FIELD)
 public class Items {
 	
-    @XmlElement(name = "item")
+    @XmlElement(name = "item") 
     private List<OfficetelRentDto> item;
     
 }

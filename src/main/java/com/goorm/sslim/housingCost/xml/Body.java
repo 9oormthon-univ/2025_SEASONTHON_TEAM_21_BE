@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 public class Body {
 	
 	@XmlElement(name = "items")
-    private Items items;
+    private Items items; 
     private int numOfRows;
     private int pageNo;
     private int totalCount;

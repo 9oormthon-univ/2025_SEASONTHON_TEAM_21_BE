@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @XmlAccessorType(XmlAccessType.FIELD)
 public class Response {
 	
-	@XmlElement(name = "body")
+	@XmlElement(name = "body") 
     private Body body;
 	
 }
