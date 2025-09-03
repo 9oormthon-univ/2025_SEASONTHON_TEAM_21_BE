@@ -37,8 +37,11 @@ public class HousingCost {
     @Column(name = "MONTHLY_RENT", nullable = false)
     private double monthlyRent;
 
-    @Column(name = "SGG_NM", nullable = false)
+    @Column(name = "SGG_NM", nullable = true)
     private String sggNm;
+
+    @Column(name = "SGG_CD", nullable = true)
+    private String sggCd;
 
     @Column(name = "UMD_NM", nullable = false)
     private String umdNm;

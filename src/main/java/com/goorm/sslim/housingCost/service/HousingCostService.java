@@ -105,8 +105,16 @@ public class HousingCostService {
         List<HousingCostDto> dtoList = response.getBody().getItems().getItem();
 
         List<HousingCost> entities = dtoList.stream()
+        		// 1. 전용면적 40㎡ 이하만
+                .filter(dto -> dto.getExclusiveArea() <= 40.0)
+                
+                // 2. 보증금/월세가 동시에 0인 경우 제외
+                .filter(dto -> !(dto.getDeposit() == 0.0 && dto.getMonthlyRent() == 0.0))
+                
+                // 3. 매핑
                 .map(dto -> HousingCost.builder()
                         .sggNm(dto.getSggNm())
+                        .sggCd(dto.getSggCd())
                         .umdNm(dto.getUmdNm())
                         .deposit(dto.getDeposit())
                         .monthlyRent(dto.getMonthlyRent())
