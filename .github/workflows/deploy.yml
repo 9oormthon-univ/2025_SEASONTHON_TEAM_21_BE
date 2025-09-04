@@ -65,8 +65,7 @@ jobs:
           context: .
           push: true
           tags: ${{ steps.tag.outputs.TAGS }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          
 
   deploy:
     needs: build-and-push
