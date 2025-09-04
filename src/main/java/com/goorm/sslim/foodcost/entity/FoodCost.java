@@ -16,9 +16,13 @@ import org.hibernate.annotations.DynamicUpdate;
 public class FoodCost {
 
     @Id
-    private Long Id;
+    private String Id;
 
     private String goodName;
 
-    private Long goodPrice;
+    private double avgGoodPrice;
+
+    private String goodInspectDay;
+
+
 }
