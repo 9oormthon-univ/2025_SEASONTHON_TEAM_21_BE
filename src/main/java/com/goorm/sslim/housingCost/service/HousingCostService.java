@@ -1,25 +1,22 @@
 package com.goorm.sslim.housingCost.service;
 
 import java.io.StringReader;
-import java.util.ArrayList;
-import java.util.Collections;
+import java.time.YearMonth;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import com.goorm.sslim.housingCost.dto.HousingCostDto;
-import com.goorm.sslim.housingCost.dto.HousingCostDto;
 import com.goorm.sslim.housingCost.entity.HousingCost;
 import com.goorm.sslim.housingCost.repository.HousingCostRepository;
-import com.goorm.sslim.housingCost.xml.Body;
-import com.goorm.sslim.housingCost.xml.Items;
 import com.goorm.sslim.housingCost.xml.Response;
+import com.goorm.sslim.region.entity.Region;
+import com.goorm.sslim.region.repository.RegionRepository;
 
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.Unmarshaller;
@@ -33,13 +30,10 @@ public class HousingCostService {
 	
 	private final WebClient webClient;
     private final HousingCostRepository housingCostRepository;
+    private final RegionRepository regionRepository;
 
-    // 환경변수에서 주입
     @Value("${apis.rtms.service-key}")
     private String serviceKey;
-
-    private static final int NUM_OF_ROWS = 200;
-    private static final double CONVERSION_RATE = 0.025; // 전월세 환산율 2.5%
 
     // 오피스텔
     private static final String PATH_OFFICETEL = "/RTMSDataSvcOffiRent/getRTMSDataSvcOffiRent";
@@ -51,20 +45,48 @@ public class HousingCostService {
     private static final String PATH_ROWHOUSE  = "/RTMSDataSvcRowHouseRent/getRTMSDataSvcRowHouseRent";
 
     // 오피스텔 호출
-    public void fetchAndSaveOfficetel(String lawdCd, String dealYmd) {
-        fetchAndSave(PATH_OFFICETEL, lawdCd, dealYmd, HousingType.OFFICETEL);
+    public void fetchAndSaveOfficetelYearly(YearMonth start, YearMonth end) {
+        fetchAndSaveYearly(PATH_OFFICETEL, start, end, HousingType.OFFICETEL);
     }
 
     // 아파트 호출
-    public void fetchAndSaveApartment(String lawdCd, String dealYmd) {
-        fetchAndSave(PATH_APARTMENT, lawdCd, dealYmd, HousingType.APARTMENT);
+    public void fetchAndSaveApartmentYearly(YearMonth start, YearMonth end) {
+        fetchAndSaveYearly(PATH_APARTMENT, start, end, HousingType.APARTMENT);
     }
 
     // 연립/단독 호출
-    public void fetchAndSaveRowhouse(String lawdCd, String dealYmd) {
-        fetchAndSave(PATH_ROWHOUSE, lawdCd, dealYmd, HousingType.ROWHOUSE);
+    public void fetchAndSaveRowhouseYearly(YearMonth start, YearMonth end) {
+        fetchAndSaveYearly(PATH_ROWHOUSE, start, end, HousingType.ROWHOUSE);
     }
+    
+    // 공통 로직: region 테이블의 모든 lawdCd × YearMonth 구간 반복
+    private void fetchAndSaveYearly(String path, YearMonth start, YearMonth end, HousingType type) {
+    	
+        List<String> lawdCds = regionRepository.findAll().stream()
+                .map(Region::getLawdCd)
+                .filter(cd -> cd != null && !cd.isBlank())
+                .distinct()
+                .toList();
 
+        for (String lawdCd : lawdCds) {
+            for (YearMonth ym : loopMonths(start, end)) {
+                String dealYmd = String.format("%04d%02d", ym.getYear(), ym.getMonthValue());
+                fetchAndSave(path, lawdCd, dealYmd, type);
+            }
+        }
+        
+    }
+    
+    // start~endInclusive까지 YearMonth 리스트 생성
+    private List<YearMonth> loopMonths(YearMonth start, YearMonth endInclusive) {
+        int months = (int) (endInclusive.getYear() * 12 + endInclusive.getMonthValue()
+                - (start.getYear() * 12 + start.getMonthValue())) + 1;
+        return IntStream.range(0, months)
+                .mapToObj(start::plusMonths)
+                .toList();
+    }
+    
+    // 단건 호출: API 요청 → XML 응답 파싱 → DB 저장
     private void fetchAndSave(String path, String lawdCd, String dealYmd, HousingType type) {
     	
     	// 1) API 호출 (XML 응답 받기)
@@ -91,7 +113,7 @@ public class HousingCostService {
             Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
             response = (Response) unmarshaller.unmarshal(new StringReader(xml));
         } catch (Exception e) {
-            e.printStackTrace();
+        	log.error("XML 파싱 오류", e);
             return;
         }
 
@@ -101,17 +123,17 @@ public class HousingCostService {
             return;
         }
         
-        // 3) DTO → Entity 매핑 (그대로 저장)
+        // 3) DTO → Entity 매핑
         List<HousingCostDto> dtoList = response.getBody().getItems().getItem();
 
         List<HousingCost> entities = dtoList.stream()
-        		// 1. 전용면적 40㎡ 이하만
+        		// 전용면적 40㎡ 이하만
                 .filter(dto -> dto.getExclusiveArea() <= 40.0)
                 
-                // 2. 보증금/월세가 동시에 0인 경우 제외
+                // 보증금/월세가 동시에 0인 경우 제외
                 .filter(dto -> !(dto.getDeposit() == 0.0 && dto.getMonthlyRent() == 0.0))
                 
-                // 3. 매핑
+                // 매핑
                 .map(dto -> HousingCost.builder()
                         .sggNm(dto.getSggNm())
                         .sggCd(dto.getSggCd())
@@ -126,7 +148,9 @@ public class HousingCostService {
                 .collect(Collectors.toList());
 
         // 4) DB 저장
-        housingCostRepository.saveAll(entities);
+        if (!entities.isEmpty()) {
+            housingCostRepository.saveAll(entities);
+        }
         
     }
     
