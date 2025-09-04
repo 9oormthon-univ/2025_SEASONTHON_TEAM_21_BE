@@ -16,27 +16,27 @@ public interface PublicTransportStatRepository extends JpaRepository<PublicTrans
     @Query(value = """
         INSERT INTO public_transport_stats
         (region_code, region_name,
-         weekly_usage_cnt, monthly_cost_won,
-         main_mode_bus_pct, main_mode_metro_pct,
+         weekly_usage_cnt, monthly_cost,
+         bus_pct, metro_pct,
          card_usage_pct, info_service_usage_pct,
-         access_time_min, transfer_service_usage_pct,
+         access_time, transfer_service_usage_pct,
          transfer_count, transfer_move_time_min, transfer_wait_time_min)
         VALUES
         (:regionCode, :regionName,
-         :weeklyUsageCnt, :monthlyCostWon,
-         :mainModeBusPct, :mainModeMetroPct,
+         :weeklyUsageCnt, :monthlyCost,
+         :busPct, :metroPct,
          :cardUsagePct, :infoServiceUsagePct,
-         :accessTimeMin, :transferServiceUsagePct,
-         :transferCount, :transferMoveTimeMin, :transferWaitTimeMin)
+         :accessTime, :transferServiceUsagePct,
+         :transferCount, :transferMoveTime, :transferWaitTime)
         ON DUPLICATE KEY UPDATE
           region_name                 = VALUES(region_name),
           weekly_usage_cnt            = VALUES(weekly_usage_cnt),
-          monthly_cost_won            = VALUES(monthly_cost_won),
-          main_mode_bus_pct           = VALUES(main_mode_bus_pct),
-          main_mode_metro_pct         = VALUES(main_mode_metro_pct),
+          monthly_cost                = VALUES(monthly_cost),
+          bus_pct                     = VALUES(bus_pct),
+          metro_pct                   = VALUES(metro_pct),
           card_usage_pct              = VALUES(card_usage_pct),
           info_service_usage_pct      = VALUES(info_service_usage_pct),
-          access_time_min             = VALUES(access_time_min),
+          access_time                 = VALUES(access_time),
           transfer_service_usage_pct  = VALUES(transfer_service_usage_pct),
           transfer_count              = VALUES(transfer_count),
           transfer_move_time_min      = VALUES(transfer_move_time_min),
@@ -46,16 +46,16 @@ public interface PublicTransportStatRepository extends JpaRepository<PublicTrans
     int upsert(
             @Param("regionCode") String regionCode,
             @Param("regionName") String regionName,
-            @Param("weeklyUsageCnt") BigDecimal weeklyUsageCnt,
-            @Param("monthlyCostWon") BigDecimal monthlyCostWon,
-            @Param("mainModeBusPct") BigDecimal mainModeBusPct,
-            @Param("mainModeMetroPct") BigDecimal mainModeMetroPct,
+            @Param("weeklyUsageCnt") BigDecimal weeklyUsageCnt,   // 엔티티 BigDecimal
+            @Param("monthlyCost") Integer monthlyCost,            // 엔티티 Integer
+            @Param("busPct") BigDecimal busPct,                   // 엔티티 BigDecimal
+            @Param("metroPct") BigDecimal metroPct,               // 엔티티 BigDecimal
             @Param("cardUsagePct") BigDecimal cardUsagePct,
             @Param("infoServiceUsagePct") BigDecimal infoServiceUsagePct,
-            @Param("accessTimeMin") BigDecimal accessTimeMin,
+            @Param("accessTime") BigDecimal accessTime,
             @Param("transferServiceUsagePct") BigDecimal transferServiceUsagePct,
-            @Param("transferCount") BigDecimal transferCount,
-            @Param("transferMoveTimeMin") BigDecimal transferMoveTimeMin,
-            @Param("transferWaitTimeMin") BigDecimal transferWaitTimeMin
+            @Param("transferCount") BigDecimal transferCount,     // 엔티티 BigDecimal
+            @Param("transferMoveTime") BigDecimal transferMoveTime,
+            @Param("transferWaitTime") BigDecimal transferWaitTime
     );
 }

@@ -15,7 +15,7 @@ spring:
     hibernate:
       naming:
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl # Hibernate가 @Table(name = "...")를 그대로 사용
-      ddl-auto: create-drop
+      ddl-auto: update
 
     show-sql: true
 
