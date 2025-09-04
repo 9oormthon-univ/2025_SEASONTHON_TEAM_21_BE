@@ -1,23 +1,28 @@
 package com.goorm.sslim.foodcost.dto.response;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import jakarta.xml.bind.annotation.XmlAccessType;
+import jakarta.xml.bind.annotation.XmlAccessorType;
+import jakarta.xml.bind.annotation.XmlElement;
+import lombok.*;
 
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
-@AllArgsConstructor
-@Builder
+@XmlAccessorType(XmlAccessType.FIELD)
 public class ProductPriceInfoDTO {
 
-    private String goodInspectDay;   // 상품_조사_일
-    private String entpId;           // 업체_아이디
-    private String goodId;           // 상품_아이디
-    private String goodPrice;        // 상품_가격
-    private String plusoneYn;        // 원플러스원_여부
-    private String goodDcYn;         // 상품_할인_여부
-    private String goodDcStartDay;   // 상품_할인_시작일
-    private String goodDcEndDay;     // 상품_할인_종료일
-    private String inputDttm;        // 입력_일시
+    @XmlElement(name = "goodInspectDay")
+    private String goodInspectDay;
+
+    @XmlElement(name = "entpId")
+    private String entpId;
+
+    @XmlElement(name = "goodId")
+    private String goodId;
+
+    @XmlElement(name = "goodPrice")
+    private String goodPrice;
+
+    @XmlElement(name = "inputDttm")
+    private String inputDttm;
 }
