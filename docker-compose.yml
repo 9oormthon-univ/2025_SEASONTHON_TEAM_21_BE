@@ -1,0 +1,28 @@
+name: seasonthon
+
+services:
+  app:
+    image: ${APP_IMAGE}            # ghcr.io/OWNER/REPO:latest → .env의 APP_IMAGE
+    container_name: sslim-app
+    environment:
+      # application.yml 플레이스홀더로 전달
+      DB_URL: ${DB_URL}            # DB 연결 URL
+      DB_USER: ${DB_USER}          # DB 계정
+      DB_PASSWORD: ${DB_PASSWORD}  # DB 비밀번호
+
+      # Hikari 초기 연결 실패 시 바로 종료하지 않도록 (-1)
+      SPRING_DATASOURCE_HIKARI_INITIALIZATION_FAIL_TIMEOUT: "-1"
+
+      TZ: Asia/Seoul
+      JAVA_OPTS: -XX:MaxRAMPercentage=75.0
+
+    ports:
+      - "127.0.0.1:18080:8080"
+    restart: unless-stopped
+
+    # 헬스체크: 이미지에 curl 필요
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -fsS http://127.0.0.1:8080/actuator/health | grep -q '\"status\":\"UP\"'" ]
+      interval: 10s
+      timeout: 3s
+      retries: 10

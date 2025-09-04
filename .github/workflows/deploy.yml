@@ -1,0 +1,100 @@
+name: ci-cd
+
+on:
+  push:
+    branches: [ "deploy" ]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  IMAGE_NAME: ghcr.io/${{ github.repository }}
+  DOCKER_BUILDKIT: 1
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      # JDK 설치 + Gradle 캐시
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle (cache)
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Grant execute permission for Gradle
+        run: chmod +x ./gradlew
+
+      # 테스트 분리: 필요 시 유지/제거
+      - name: Run tests
+        run: ./gradlew test --no-daemon
+
+      # JAR 빌드 (여기서 산출된 build/libs/*.jar를 Docker가 COPY)
+      - name: Build jar
+        run: ./gradlew clean build -x test --no-daemon
+
+      # GHCR 로그인
+      - name: Login GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # 태그 계산
+      - name: Compute tags
+        id: tag
+        run: |
+          echo "SHORT_SHA=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+          echo "TAGS=${{ env.IMAGE_NAME }}:latest,${{ env.IMAGE_NAME }}:sha-${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+
+      # 도커 빌드 & 푸시 (레포 루트 Dockerfile 사용)
+      - name: Build & Push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.tag.outputs.TAGS }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare SSH
+        run: |
+          install -m 600 -D /dev/null ~/.ssh/id_ci
+          printf '%s\n' "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_ci
+          printf '%s\n' "${{ secrets.EC2_HOST_KEY }}" >> ~/.ssh/known_hosts
+
+      # 레포의 docker-compose.yml을 서버에 반영
+      - name: Upload compose to server
+        run: |
+          scp -i ~/.ssh/id_ci ./docker-compose.yml deploy@${{ secrets.EC2_HOST }}:/srv/app/current/docker-compose.yml
+
+      - name: Remote deploy
+        env:
+          GH_USER: ${{ github.actor }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ssh -i ~/.ssh/id_ci deploy@${{ secrets.EC2_HOST }} <<'EOSSH'
+          set -euo pipefail
+          cd /srv/app/current
+          docker login ghcr.io -u "$GH_USER" -p "$GH_TOKEN"
+          docker compose pull app
+          docker compose up -d --no-deps app
+          docker image prune -f
+          EOSSH

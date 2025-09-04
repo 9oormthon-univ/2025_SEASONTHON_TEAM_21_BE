@@ -1,0 +1,24 @@
+# Git & IDE
+.git
+.gitignore
+.idea
+*.iml
+
+# Gradle
+.gradle
+build
+
+# Node/npm (프론트엔드 같이 있을 경우)
+node_modules
+
+# OS / IDE cache
+*.log
+.DS_Store
+
+# Docker 관련
+docker-compose.yml
+.dockerignore
+
+# Env files (서버에서만 관리)
+.env
+.env.*
