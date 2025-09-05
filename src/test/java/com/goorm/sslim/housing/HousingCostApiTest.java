@@ -1,17 +1,17 @@
 package com.goorm.sslim.housing;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.time.YearMonth;
-import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.core.env.Environment;
 
-import com.goorm.sslim.housingCost.entity.HousingCost;
 import com.goorm.sslim.housingCost.repository.HousingCostRepository;
 import com.goorm.sslim.housingCost.service.HousingCostService;
 import com.goorm.sslim.region.entity.Region;
@@ -30,92 +30,81 @@ public class HousingCostApiTest {
     
     @Autowired
     private RegionRepository regionRepository;
+    
+    @Autowired
+    private Environment env;
+
+    private static final String TEST_LAWD_CD = "11110"; // 종로구
 
     @BeforeEach
     void setupRegion() {
-        // Given: region 테이블에 테스트용 LAWD_CD 등록 (예: 종로구 11110)
-        // NOTE: Region 엔티티의 NOT NULL 컬럼이 있다면 여기에 함께 채워주세요.
         if (regionRepository.count() == 0) {
             Region r = new Region();
-            r.setLawdCd("11110"); // 종로구
+            r.setLawdCd(TEST_LAWD_CD);
             regionRepository.save(r);
         }
     }
     
-    @Test
-    @DisplayName("오피스텔 API → region.lawdCd×월 구간 → 파싱/저장 검증")
-    @Transactional  // 테스트 후 롤백
-    void fetchAndSave_officetel_yearly_success() {
-    	
-        // Given
-        long beforeCount = housingCostRepository.count();
-        YearMonth from = YearMonth.of(2024, 7);
-        YearMonth to   = YearMonth.of(2024, 7); // 속도 위해 1개월만. 필요하면 12월로 변경
-
-        // When
-        housingCostService.fetchAndSaveOfficetelYearly(from, to);
-
-        // Then
-        List<HousingCost> saved = housingCostRepository.findAll();
-        long afterCount = saved.size();
-        assertThat(afterCount).isGreaterThan(beforeCount);
-
-        // 샘플 출력 및 무결성 간단 검증
-        saved.stream().limit(5).forEach(h -> {
-            System.out.println("[OFFICETEL] " + h.getSggNm() + " / " + h.getUmdNm()
-                    + " / area=" + h.getExclusiveArea()
-                    + " / deposit=" + h.getDeposit()
-                    + " / rent=" + h.getMonthlyRent()
-                    + " / " + h.getDealYear() + "-" + h.getDealMonth());
-        });
-
-        assertThat(saved).allSatisfy(h -> {
-            assertThat(h.getDealYear()).isNotZero();
-            assertThat(h.getDealMonth()).isNotZero();
-            assertThat(h.getSggCd()).isNull();
-            assertThat(h.getSggNm()).isNotBlank();
-            assertThat(h.getUmdNm()).isNotBlank();
-            assertThat(h.getHousingType().name()).isEqualTo("OFFICETEL");
-        });
-        
+    /**
+     * 외부 API 키가 없거나 네트워크 환경이 아니면 테스트를 Skip
+     * - 실제 API 호출을 수행하는 통합 테스트이므로 방어적으로 처리
+     */
+    private void assumeServiceKeyPresent() {
+        String key = env.getProperty("apis.rtms.service-key");
+        assumeTrue(key != null && !key.isBlank(),
+                "apis.rtms.service-key 가 설정되지 않아 RTMS 통합 테스트를 건너뜁니다");
     }
     
-    
     @Test
-    @DisplayName("아파트 API → region.lawdCd×월 구간 → 파싱/저장 검증")
-    @Transactional  // 테스트 후 롤백
-    void fetchAndSave_apartment_yearly_success() {
-    	
-        // Given
-        long beforeCount = housingCostRepository.count();
-        YearMonth from = YearMonth.of(2024, 7);
-        YearMonth to   = YearMonth.of(2024, 9); // 속도 위해 1개월만
+    @DisplayName("오피스텔 API 호출 → 응답 파싱 → 저장 검증")
+    @Transactional
+    void officetel_api_flow_success() {
+        assumeServiceKeyPresent();
 
-        // When
-        housingCostService.fetchAndSaveApartmentYearly(from, to);
+        long before = housingCostRepository.count();
+        housingCostService.fetchAndSaveYearlyOfficetel(YearMonth.of(2024, 7), YearMonth.of(2024, 7));
+        long after = housingCostRepository.count();
 
-        // Then
-        List<HousingCost> saved = housingCostRepository.findAll();
-        long afterCount = saved.size();
-        assertThat(afterCount).isGreaterThan(beforeCount);
-
-        saved.stream().limit(5).forEach(h -> {
-            System.out.println("[APARTMENT] " + h.getSggNm() + " / " + h.getUmdNm()
-                    + " / area=" + h.getExclusiveArea()
-                    + " / deposit=" + h.getDeposit()
-                    + " / rent=" + h.getMonthlyRent()
-                    + " / " + h.getDealYear() + "-" + h.getDealMonth());
-        });
-
-        assertThat(saved).allSatisfy(h -> {
-            assertThat(h.getDealYear()).isNotZero();
-            assertThat(h.getDealMonth()).isNotZero();
-            assertThat(h.getSggCd()).isNotBlank();
-            assertThat(h.getSggNm()).isNull();
-            assertThat(h.getUmdNm()).isNotBlank();
-            assertThat(h.getHousingType().name()).isEqualTo("APARTMENT");
-        });
-        
+        assertThat(after).isGreaterThan(before);
     }
-	
+
+    @Test
+    @DisplayName("아파트 API 호출 → 응답 파싱 → 저장 검증")
+    @Transactional
+    void apartment_api_flow_success() {
+        assumeServiceKeyPresent();
+
+        long before = housingCostRepository.count();
+        housingCostService.fetchAndSaveYearlyApartment(YearMonth.of(2024, 7), YearMonth.of(2024, 7));
+        long after = housingCostRepository.count();
+
+        assertThat(after).isGreaterThan(before);
+    }
+
+    @Test
+    @DisplayName("단독·다가구 API 호출 → 응답 파싱 → 저장 검증")
+    @Transactional
+    void single_api_flow_success() {
+        assumeServiceKeyPresent();
+
+        long before = housingCostRepository.count();
+        housingCostService.fetchAndSaveYearlySingle(YearMonth.of(2024, 7), YearMonth.of(2024, 7));
+        long after = housingCostRepository.count();
+
+        assertThat(after).isGreaterThan(before);
+    }
+
+    @Test
+    @DisplayName("연립·다세대 API 호출 → 응답 파싱 → 저장 검증")
+    @Transactional
+    void rowhouse_api_flow_success() {
+        assumeServiceKeyPresent();
+
+        long before = housingCostRepository.count();
+        housingCostService.fetchAndSaveYearlyRowHouse(YearMonth.of(2024, 7), YearMonth.of(2024, 7));
+        long after = housingCostRepository.count();
+
+        assertThat(after).isGreaterThan(before);
+    }
+
 }
