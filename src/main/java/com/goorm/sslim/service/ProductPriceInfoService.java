@@ -57,7 +57,7 @@ public class ProductPriceInfoService {
     }
 
     @Transactional
-    public void calculateAndSaveAverage(String goodInspectDay, String goodId) throws JAXBException {
+    public void saveAveragePrice(String goodInspectDay, String goodId) throws JAXBException {
         List<ProductPriceInfoDTO> priceList = fetchProductPriceInfo(goodInspectDay, goodId);
 
         if (priceList == null || priceList.isEmpty()) {

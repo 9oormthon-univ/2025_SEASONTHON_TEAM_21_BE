@@ -25,7 +25,7 @@ public class TestController {
 
     @GetMapping("/prices")
     public ApiResponse<Void> test(@RequestParam String goodInspectDay, String goodId) throws JAXBException {
-        productPriceInfoService.calculateAndSaveAverage(goodInspectDay, goodId);
+        productPriceInfoService.saveAveragePrice(goodInspectDay, goodId);
 
         return ApiResponse.onSuccess(ResponseCode.OK, null);
     }
