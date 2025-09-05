@@ -128,12 +128,13 @@ jobs:
           GH_USER: ${{ github.actor }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # 원격 bash 실행 전에 env로 변수 주입
           ssh -T -i ~/.ssh/id_ci \
-            GH_USER="$GH_USER" GH_TOKEN="$GH_TOKEN" \
-            deploy@${{ secrets.EC2_HOST }} 'bash -s' <<'EOSSH'
+            deploy@${{ secrets.EC2_HOST }} \
+            env GH_USER="$GH_USER" GH_TOKEN="$GH_TOKEN" bash -s <<'EOSSH'
           set -euo pipefail
           cd /srv/app/current
-          # GHCR 로그인(토큰을 stdin으로 안전하게 전달)
+          # GHCR 로그인(토큰은 stdin으로 안전 전달)
           echo "$GH_TOKEN" | docker login ghcr.io -u "$GH_USER" --password-stdin
           docker compose pull app
           docker compose up -d --no-deps app
