@@ -16,13 +16,16 @@ import lombok.NoArgsConstructor;
 public class HousingCostDto {
 
 	@XmlElement(name = "excluUseAr")
-    private double exclusiveArea;
+	private Double exclusiveArea;   // 오피스텔/아파트
 
+	@XmlElement(name = "totalFloorAr")
+	private Double totalFloorAr;    // 단독/다가구
+	
     @XmlElement(name = "deposit")
-    private double deposit;
+    private Double deposit;
 
     @XmlElement(name = "monthlyRent")
-    private double monthlyRent;
+    private Double monthlyRent;
 
     @XmlElement(name = "sggNm")
     private String sggNm;
