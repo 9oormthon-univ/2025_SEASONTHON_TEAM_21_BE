@@ -40,7 +40,9 @@ public class HousingCostApiTest {
     void setupRegion() {
         if (regionRepository.count() == 0) {
             Region r = new Region();
-            r.setLawdCd(TEST_LAWD_CD);
+            r.setLawdCd(TEST_LAWD_CD);   // 11110
+            r.setSiName("서울특별시");      // ✅ 필수값 채우기
+            r.setSggName("종로구");        // ✅ 필수값 채우기
             regionRepository.save(r);
         }
     }
