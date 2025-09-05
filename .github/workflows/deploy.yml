@@ -1,142 +1,104 @@
-name: ci-cd
+name: deploy
 
 on:
   push:
     branches: [ "deploy" ]
-  workflow_dispatch:
-
-concurrency:
-  group: deploy-${{ github.ref }}
-  cancel-in-progress: true
+    # 또는 태그 기준 배포 원하면:
+    # tags: [ "v*" ]
 
 env:
-  DOCKER_BUILDKIT: 1
+  REGISTRY: docker.io
+  IMAGE_REPO: ${{ secrets.APP_IMAGE_REPO }}   # ex) docker.io/yourname/jido-app
+  IMAGE_TAG: ${{ github.sha }}                # 커밋 SHA로 태그
+  LATEST_TAG: latest
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      # JDK + Gradle 캐시
-      - name: Set up Java 17
+      - name: Setup JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      - name: Setup Gradle (cache)
-        uses: gradle/actions/setup-gradle@v3
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
 
-      - name: Grant execute permission for Gradle
-        run: chmod +x ./gradlew
+      - name: Build JAR
+        run: ./gradlew clean build -x test
 
-      # (선택) 배포 타깃 모듈 지정: 예) api, app 등
-      # env:
-      #   APP_MODULE: api
-
-      # 1) JAR 생성 보장: bootJar 우선, 없으면 jar로 폴백
-      - name: Build artifact (bootJar first, then jar)
-        run: |
-          set -euo pipefail
-          PREFIX=""
-          if [ -n "${APP_MODULE:-}" ]; then
-            PREFIX=":${APP_MODULE}"
-            echo "[INFO] Target module: ${APP_MODULE}"
-          else
-            echo "[INFO] Target module: (root project)"
-          fi
-
-          echo "[INFO] Try bootJar"
-          if ./gradlew ${PREFIX}:clean ${PREFIX}:bootJar -x test --no-daemon; then
-            echo "[INFO] bootJar built"
-          else
-            echo "[WARN] bootJar not available, fallback to jar"
-            ./gradlew ${PREFIX}:clean ${PREFIX}:jar -x test --no-daemon
-          fi
-
-      # 2) 산출물(JAR) 자동 탐색(멀티모듈 포함), *-plain.jar 제외
-      - name: Locate artifact
-        run: |
-          set -euo pipefail
-          echo "[DEBUG] find artifacts under **/build/libs"
-          ls -al **/build/libs || true
-          ARTIFACT=$(find . -type f -path "*/build/libs/*.jar" ! -name "*-plain.jar" -print0 \
-                     | xargs -0 ls -1S 2>/dev/null | head -n 1 || true)
-          if [ -z "$ARTIFACT" ]; then
-            echo "No JAR found under **/build/libs"
-            echo "HINT: 멀티모듈이면 env.APP_MODULE 로 모듈 지정"
-            exit 1
-          fi
-          echo "ARTIFACT=$ARTIFACT" >> $GITHUB_ENV
-          echo "Using artifact: $ARTIFACT"
-
-      # 3) 이미지 이름 소문자화
-      - name: Compute image name (lowercase)
-        run: echo "IMAGE_NAME=ghcr.io/${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
-
-      - name: Show image name
-        run: echo "Image will be pushed as $IMAGE_NAME"
-
-      # 4) GHCR 로그인
-      - name: Login GHCR
+      - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # 5) 태그 계산
-      - name: Compute tags
-        id: tag
-        run: |
-          echo "SHORT_SHA=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
-          echo "TAGS=${IMAGE_NAME}:latest,${IMAGE_NAME}:sha-${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
-
-      # 6) 도커 빌드 & 푸시 (레포 루트 Dockerfile 사용)
-      - name: Build & Push
+      - name: Build and Push Image
         uses: docker/build-push-action@v6
         with:
           context: .
+          file: ./Dockerfile
           push: true
-          tags: ${{ steps.tag.outputs.TAGS }}
-          build-args: |
-            JAR_FILE=${{ env.ARTIFACT }}
+          tags: |
+            ${{ env.IMAGE_REPO }}:${{ env.IMAGE_TAG }}
+            ${{ env.IMAGE_REPO }}:${{ env.LATEST_TAG }}
+          # BuildKit 캐시 사용(옵션)
+          cache-from: type=registry,ref=${{ env.IMAGE_REPO }}:buildcache
+          cache-to: type=registry,ref=${{ env.IMAGE_REPO }}:buildcache,mode=max
 
   deploy:
-    needs: build-and-push
     runs-on: ubuntu-latest
+    needs: build-and-push
     steps:
-      - uses: actions/checkout@v4
+      - name: SSH Deploy (pull & compose up)
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script_stop: true
+          script: |
+            set -e
 
-      - name: Prepare SSH
-        run: |
-          install -m 600 -D /dev/null ~/.ssh/id_ci
-          printf '%s\n' "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_ci
-          printf '%s\n' "${{ secrets.EC2_HOST_KEY }}" >> ~/.ssh/known_hosts
+            # 배포 디렉토리로 이동 (docker-compose.yml과 .env가 있는 경로)
+            cd /opt/sslim-app
 
-      # 레포의 docker-compose.yml을 서버에 반영
-      - name: Upload compose to server
-        run: |
-          scp -i ~/.ssh/id_ci ./docker-compose.yml deploy@${{ secrets.EC2_HOST }}:/srv/app/current/docker-compose.yml
+            # 최신 이미지 풀
+            docker pull ${{ env.IMAGE_REPO }}:${{ env.IMAGE_TAG }}
 
-      - name: Remote deploy
-        env:
-          GH_USER: ${{ github.actor }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          # 원격 bash 실행 전에 env로 변수 주입
-          ssh -T -i ~/.ssh/id_ci \
-            deploy@${{ secrets.EC2_HOST }} \
-            env GH_USER="$GH_USER" GH_TOKEN="$GH_TOKEN" bash -s <<'EOSSH'
-          set -euo pipefail
-          cd /srv/app/current
-          # GHCR 로그인(토큰은 stdin으로 안전 전달)
-          echo "$GH_TOKEN" | docker login ghcr.io -u "$GH_USER" --password-stdin
-          docker compose pull app
-          docker compose up -d --no-deps app
-          docker image prune -f
-          EOSSH
+            # .env의 APP_IMAGE를 새 태그로 업데이트(선택)
+            if grep -q '^APP_IMAGE=' .env; then
+              sed -i 's|^APP_IMAGE=.*$|APP_IMAGE='${{ env.IMAGE_REPO }}:${{ env.IMAGE_TAG }}'|' .env
+            else
+              echo "APP_IMAGE=${{ env.IMAGE_REPO }}:${{ env.IMAGE_TAG }}" >> .env
+            fi
+
+            # 안전 롤링 재기동
+            docker compose pull
+            docker compose up -d
+
+            # 헬스체크 대기(옵션)
+            echo "Waiting health..."
+            for i in {1..30}; do
+              sleep 2
+              if docker inspect --format='{{json .State.Health.Status}}' sslim-app 2>/dev/null | grep -q healthy; then
+                echo "App is healthy"
+                exit 0
+              fi
+            done
+            echo "Healthcheck timeout"
+            docker compose logs --no-color --tail=200
+            exit 1
