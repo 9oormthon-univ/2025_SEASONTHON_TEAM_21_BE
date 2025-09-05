@@ -43,16 +43,24 @@ jobs:
 
 
       # JAR 빌드 (여기서 산출된 build/libs/*.jar를 Docker가 COPY)
-      - name: Build jar
-        run: ./gradlew clean build -x test --no-daemon
+#      - name: Build jar
+#        run: ./gradlew clean build -x test --no-daemon
 
+      # JAR 생성 보장: build 대신 bootJar 사용
+      - name: Build bootJar
+        run: ./gradlew clean bootJar -x test --no-daemon
+
+      # 산출물(JAR) 위치 탐색: 멀티모듈 대비
       - name: Locate artifact
         run: |
           set -e
+          echo "[DEBUG] find artifacts under **/build/libs"
           ls -al **/build/libs || true
-          ARTIFACT=$(ls -1 **/build/libs/*.jar | head -n 1)
+          ARTIFACT=$(ls -1 **/build/libs/*.jar 2>/dev/null | head -n 1)
           if [ -z "$ARTIFACT" ]; then
-            echo "No JAR found under **/build/libs"; exit 1
+            echo "No JAR found under **/build/libs"
+            echo "HINT: 멀티모듈이면 ':모듈명:bootJar'로 빌드하거나, Dockerfile ARG에 정확한 경로를 넘겨야 함"
+            exit 1
           fi
           echo "ARTIFACT=$ARTIFACT" >> $GITHUB_ENV
           echo "Using artifact: $ARTIFACT"
