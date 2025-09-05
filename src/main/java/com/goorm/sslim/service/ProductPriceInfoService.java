@@ -31,6 +31,7 @@ public class ProductPriceInfoService {
     private static final String BASE_URL =
             "http://openapi.price.go.kr/openApiImpl/ProductPriceInfoService/getProductPriceInfoSvc.do";
     private final FoodCostRepository foodCostRepository;
+    private final ProductInfoService productInfoService;
 
     public List<ProductPriceInfoDTO> fetchProductPriceInfo(String goodInspectDay, String goodId) throws JAXBException {
         String url = UriComponentsBuilder.fromHttpUrl(BASE_URL)
@@ -76,18 +77,12 @@ public class ProductPriceInfoService {
         // DB 저장
         FoodCost foodCost = FoodCost.builder()
                 .Id(goodId)
-                .goodName(findGoodName(goodId))
+                .goodName(productInfoService.findGoodName(goodId))
                 .avgGoodPrice(Math.round(average * 10D) / 10D)
                 .goodInspectDay(goodInspectDay)
                 .build();
 
 
         foodCostRepository.save(foodCost);
-    }
-
-    public String findGoodName(String goodId) {
-        String goodName = "default";
-
-        return goodName;
     }
 }
