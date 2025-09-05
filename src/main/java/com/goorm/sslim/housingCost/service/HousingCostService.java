@@ -5,6 +5,7 @@ import java.time.YearMonth;
 import java.util.List;
 import java.util.stream.IntStream;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -19,17 +20,25 @@ import com.goorm.sslim.region.repository.RegionRepository;
 
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.Unmarshaller;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class HousingCostService {
 	
-	private final WebClient webClient;
+	private final WebClient rtmsWebClient;
     private final HousingCostRepository housingCostRepository;
     private final RegionRepository regionRepository;
+    
+    public HousingCostService(
+            @Qualifier("rtmsWebClient") WebClient rtmsWebClient,
+            HousingCostRepository housingCostRepository,
+            RegionRepository regionRepository
+        ) {
+            this.rtmsWebClient = rtmsWebClient;
+            this.housingCostRepository = housingCostRepository;
+            this.regionRepository = regionRepository;
+    }
 
     @Value("${apis.rtms.service-key}")
     private String serviceKey;
@@ -201,7 +210,7 @@ public class HousingCostService {
     private String callRtmsApi(String path, String lawdCd, String dealYmd) {
     	
         try {
-            return webClient.get()
+            return rtmsWebClient.get()
                     .uri(uriBuilder -> uriBuilder
                             .path(path)
                             .queryParam("serviceKey", serviceKey)
