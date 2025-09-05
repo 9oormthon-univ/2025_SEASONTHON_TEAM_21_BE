@@ -10,7 +10,6 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  IMAGE_NAME: ghcr.io/${{ github.repository }}
   DOCKER_BUILDKIT: 1
 
 jobs:
@@ -22,7 +21,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # JDK 설치 + Gradle 캐시
+      # JDK + Gradle 캐시
       - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
@@ -32,40 +31,57 @@ jobs:
       - name: Setup Gradle (cache)
         uses: gradle/actions/setup-gradle@v3
 
-      - name: Compute lowercase IMAGE_NAME
-        run: echo "IMAGE_NAME=ghcr.io/${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
-
-      - name: Show image name
-        run: echo "Image will be pushed as $IMAGE_NAME"
-
       - name: Grant execute permission for Gradle
         run: chmod +x ./gradlew
 
+      # (선택) 배포 타깃 모듈 지정: 예) api, app 등
+      # env:
+      #   APP_MODULE: api
 
-      # JAR 빌드 (여기서 산출된 build/libs/*.jar를 Docker가 COPY)
-#      - name: Build jar
-#        run: ./gradlew clean build -x test --no-daemon
+      # 1) JAR 생성 보장: bootJar 우선, 없으면 jar로 폴백
+      - name: Build artifact (bootJar first, then jar)
+        run: |
+          set -euo pipefail
+          PREFIX=""
+          if [ -n "${APP_MODULE:-}" ]; then
+            PREFIX=":${APP_MODULE}"
+            echo "[INFO] Target module: ${APP_MODULE}"
+          else
+            echo "[INFO] Target module: (root project)"
+          fi
 
-      # JAR 생성 보장: build 대신 bootJar 사용
-      - name: Build bootJar
-        run: ./gradlew clean bootJar -x test --no-daemon
+          echo "[INFO] Try bootJar"
+          if ./gradlew ${PREFIX}:clean ${PREFIX}:bootJar -x test --no-daemon; then
+            echo "[INFO] bootJar built"
+          else
+            echo "[WARN] bootJar not available, fallback to jar"
+            ./gradlew ${PREFIX}:clean ${PREFIX}:jar -x test --no-daemon
+          fi
 
-      # 산출물(JAR) 위치 탐색: 멀티모듈 대비
+      # 2) 산출물(JAR) 자동 탐색(멀티모듈 포함), *-plain.jar 제외
       - name: Locate artifact
         run: |
-          set -e
+          set -euo pipefail
           echo "[DEBUG] find artifacts under **/build/libs"
           ls -al **/build/libs || true
-          ARTIFACT=$(ls -1 **/build/libs/*.jar 2>/dev/null | head -n 1)
+          ARTIFACT=$(find . -type f -path "*/build/libs/*.jar" ! -name "*-plain.jar" -print0 \
+                     | xargs -0 ls -1S 2>/dev/null | head -n 1 || true)
           if [ -z "$ARTIFACT" ]; then
             echo "No JAR found under **/build/libs"
-            echo "HINT: 멀티모듈이면 ':모듈명:bootJar'로 빌드하거나, Dockerfile ARG에 정확한 경로를 넘겨야 함"
+            echo "HINT: 멀티모듈이면 env.APP_MODULE 로 모듈 지정"
             exit 1
           fi
           echo "ARTIFACT=$ARTIFACT" >> $GITHUB_ENV
           echo "Using artifact: $ARTIFACT"
 
-      # GHCR 로그인
+      # 3) 이미지 이름 소문자화
+      - name: Compute image name (lowercase)
+        run: echo "IMAGE_NAME=ghcr.io/${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+
+      - name: Show image name
+        run: echo "Image will be pushed as $IMAGE_NAME"
+
+      # 4) GHCR 로그인
       - name: Login GHCR
         uses: docker/login-action@v3
         with:
@@ -73,14 +89,14 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # 태그 계산
+      # 5) 태그 계산
       - name: Compute tags
         id: tag
         run: |
           echo "SHORT_SHA=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
-          echo "TAGS=${{ env.IMAGE_NAME }}:latest,${{ env.IMAGE_NAME }}:sha-${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+          echo "TAGS=${IMAGE_NAME}:latest,${IMAGE_NAME}:sha-${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
 
-      # 도커 빌드 & 푸시 (레포 루트 Dockerfile 사용)
+      # 6) 도커 빌드 & 푸시 (레포 루트 Dockerfile 사용)
       - name: Build & Push
         uses: docker/build-push-action@v6
         with:
@@ -89,7 +105,6 @@ jobs:
           tags: ${{ steps.tag.outputs.TAGS }}
           build-args: |
             JAR_FILE=${{ env.ARTIFACT }}
-          
 
   deploy:
     needs: build-and-push

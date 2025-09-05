@@ -1,27 +1,14 @@
-# Git & IDE
+.gradle
+**/build/*
+!**/build/libs/*.jar
 .git
 .gitignore
 .idea
 *.iml
-
-# Gradle 캐시 디렉토리
-.gradle
-
-# build 디렉토리는 제외하되 JAR 파일만 포함 (모든 모듈 대응)
-**/build/*
-!**/build/libs/*.jar
-
-# Node/npm (프론트엔드 같이 있을 경우)
 node_modules
-
-# OS / IDE cache
 *.log
 .DS_Store
-
-# Docker 관련
 docker-compose.yml
 .dockerignore
-
-# Env files (서버에서만 관리)
 .env
 .env.*
