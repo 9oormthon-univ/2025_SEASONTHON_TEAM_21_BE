@@ -14,26 +14,17 @@ import lombok.Data;
 public class Region {
 
 	@Id
-	@Column(name = "REGION_ID")
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long regionId; // 지역 PK (기본 키)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "REGION_ID")
+    private Long regionId; // PK
 
-	@Column(name = "LAWD_CD", nullable = false)   // ★ 여기가 핵심
-    private String lawdCd;
+    @Column(name = "LAWD_CD", nullable = false, unique = true, length = 5)
+    private String lawdCd; // 국토부 실거래가 API 요청용 코드 (5자리)
 
-    @Column(name = "REGION_KCA_CODE")
-    private String regionKcaCode;
+    @Column(name = "SI_NAME", nullable = false, length = 50)
+    private String siName; // 시/도 이름 (서울특별시, 경기도 등)
 
-    @Column(name = "REGION_SGG_CODE")
-    private String regionSggCode;
-
-    @Column(name = "REGION_SGG_NAME")
-    private String regionSggName;
-
-    @Column(name = "REGION_SI_NAME")
-    private String regionSiName;
-
-    @Column(name = "REGION_STCIS_CODE")
-    private String regionStcisCode;
+    @Column(name = "SGG_NAME", nullable = false, length = 50)
+    private String sggName; // 시군구 이름
 
 }
