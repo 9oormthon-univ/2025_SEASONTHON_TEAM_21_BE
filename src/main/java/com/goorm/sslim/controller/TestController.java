@@ -1,8 +1,10 @@
 package com.goorm.sslim.controller;
 
+import com.goorm.sslim.foodcost.dto.response.ProductInfoDTO;
 import com.goorm.sslim.foodcost.dto.response.ProductPriceInfoDTO;
 import com.goorm.sslim.global.code.ResponseCode;
 import com.goorm.sslim.global.response.ApiResponse;
+import com.goorm.sslim.service.ProductInfoService;
 import com.goorm.sslim.service.ProductPriceInfoService;
 import jakarta.xml.bind.JAXBException;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +21,7 @@ import java.util.List;
 public class TestController {
 
     private final ProductPriceInfoService productPriceInfoService;
+    private final ProductInfoService productInfoService;
 
     @GetMapping("/prices")
     public ApiResponse<Void> test(@RequestParam String goodInspectDay, String goodId) throws JAXBException {
