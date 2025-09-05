@@ -1,30 +1,26 @@
-name: deploy
+name: Deploy sslim-backend
 
 on:
   push:
-    branches: [ "deploy" ]
-    # 또는 태그 기준 배포 원하면:
-    # tags: [ "v*" ]
-
-env:
-  REGISTRY: docker.io
-  IMAGE_REPO: ${{ secrets.APP_IMAGE_REPO }}   # ex) docker.io/yourname/jido-app
-  IMAGE_TAG: ${{ github.sha }}                # 커밋 SHA로 태그
-  LATEST_TAG: latest
+    branches: [ deploy ]
 
 jobs:
-  build-and-push:
+  deploy:
     runs-on: ubuntu-latest
+
     steps:
+      # 1. GitHub 코드 체크아웃
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup JDK 17
+      # 2. JDK 17 설치
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
-          distribution: temurin
           java-version: '17'
+          distribution: 'temurin'
 
+      # 3. Gradle 캐시
       - name: Cache Gradle
         uses: actions/cache@v4
         with:
@@ -35,70 +31,85 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      - name: Build JAR
+      # 4. gradlew 실행 권한 부여
+      - name: Grant execute permission for Gradle
+        run: chmod +x ./gradlew
+
+      # 5. Spring Boot JAR 빌드
+      - name: Build Spring Boot JAR
         run: ./gradlew clean build -x test
 
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      # 6. 디버깅용 (시크릿 길이만 확인)
+      - name: Debug EC2 variables
+        run: |
+          echo "EC2_HOST: ${EC2_HOST:0:5}*****"
+          echo "EC2_USER: ${EC2_USER}"
+          echo "EC2_KEY length: $(echo "$EC2_KEY" | wc -c)"
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+          EC2_KEY:  ${{ secrets.EC2_KEY }}
 
-      - name: Build and Push Image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./Dockerfile
-          push: true
-          tags: |
-            ${{ env.IMAGE_REPO }}:${{ env.IMAGE_TAG }}
-            ${{ env.IMAGE_REPO }}:${{ env.LATEST_TAG }}
-          # BuildKit 캐시 사용(옵션)
-          cache-from: type=registry,ref=${{ env.IMAGE_REPO }}:buildcache
-          cache-to: type=registry,ref=${{ env.IMAGE_REPO }}:buildcache,mode=max
-
-  deploy:
-    runs-on: ubuntu-latest
-    needs: build-and-push
-    steps:
-      - name: SSH Deploy (pull & compose up)
+      # 7. 서버에 .env 필수 키 확인
+      - name: Guard required env on server
         uses: appleboy/ssh-action@v1.2.0
         with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          port: ${{ secrets.SSH_PORT }}
+          host:     ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key:      ${{ secrets.EC2_KEY }}
           script_stop: true
           script: |
             set -e
-
-            # 배포 디렉토리로 이동 (docker-compose.yml과 .env가 있는 경로)
-            cd /opt/sslim-app
-
-            # 최신 이미지 풀
-            docker pull ${{ env.IMAGE_REPO }}:${{ env.IMAGE_TAG }}
-
-            # .env의 APP_IMAGE를 새 태그로 업데이트(선택)
-            if grep -q '^APP_IMAGE=' .env; then
-              sed -i 's|^APP_IMAGE=.*$|APP_IMAGE='${{ env.IMAGE_REPO }}:${{ env.IMAGE_TAG }}'|' .env
-            else
-              echo "APP_IMAGE=${{ env.IMAGE_REPO }}:${{ env.IMAGE_TAG }}" >> .env
+            cd ~/JIDO || mkdir -p ~/JIDO && cd ~/JIDO
+            if [ ! -f .env ]; then
+              echo "❌ .env not found in ~/JIDO"; exit 1
             fi
-
-            # 안전 롤링 재기동
-            docker compose pull
-            docker compose up -d
-
-            # 헬스체크 대기(옵션)
-            echo "Waiting health..."
-            for i in {1..30}; do
-              sleep 2
-              if docker inspect --format='{{json .State.Health.Status}}' sslim-app 2>/dev/null | grep -q healthy; then
-                echo "App is healthy"
-                exit 0
+            for k in DB_URL DB_USER DB_PASSWORD; do
+              if ! grep -q "^$k=" .env 2>/dev/null; then
+                echo "❌ Missing $k in .env"; exit 1
               fi
             done
-            echo "Healthcheck timeout"
+            echo "✅ .env OK"
+
+      # 8. EC2로 프로젝트 전송 (불필요 파일 제외)
+      - name: Copy project to EC2
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host:     ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key:      ${{ secrets.EC2_KEY }}
+          source: |
+            .
+            !.env
+            !.git/**
+            !.github/**
+            !node_modules/**
+          target: "/home/${{ secrets.EC2_USER }}/JIDO"
+          debug: true
+          strip_components: 0
+
+      # 9. 서버에서 docker compose로 빌드 및 실행
+      - name: SSH deploy (docker compose up --build)
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host:     ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key:      ${{ secrets.EC2_KEY }}
+          script_stop: true
+          script: |
+            set -e
+            cd ~/JIDO
+            docker compose down || true
+            docker compose up -d --build
+
+            echo "Waiting for healthcheck..."
+            for i in {1..30}; do
+              sleep 2
+              state=$(docker inspect --format='{{.State.Health.Status}}' sslim-app 2>/dev/null || true)
+              if [ "$state" = "healthy" ]; then
+                echo "✅ App healthy"; exit 0
+              fi
+            done
+            echo "❌ Healthcheck timeout. Recent logs:"
             docker compose logs --no-color --tail=200
             exit 1
