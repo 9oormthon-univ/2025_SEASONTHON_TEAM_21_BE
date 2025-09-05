@@ -46,19 +46,24 @@ jobs:
       - name: Deploy via docker compose (no env file)
         uses: appleboy/ssh-action@v1.2.0
         with:
-          host:         ${{ secrets.EC2_HOST }}
-          username:     ${{ secrets.EC2_USER }}
-          key:          ${{ secrets.EC2_SSH_KEY }}
-          script_stop:  true
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script_stop: true
           script: |
             set -e
             COMPOSE_DIR="$HOME/SSLIM"
             cd "$COMPOSE_DIR"
 
+            # 기존 컨테이너 강제 종료 및 삭제
+            docker rm -f sslim-app || true
+
+            # 네트워크와 orphan 컨테이너까지 정리
             docker compose down --remove-orphans || true
+
             docker compose up -d --build
 
-            # healthcheck 대기 (컨테이너명: sslim-app)
+            # healthcheck 대기
             for i in {1..30}; do
               sleep 2
               state=$(docker inspect --format='{{.State.Health.Status}}' sslim-app 2>/dev/null || true)
