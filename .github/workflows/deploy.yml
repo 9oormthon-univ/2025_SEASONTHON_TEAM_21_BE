@@ -13,7 +13,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # 2) JDK 17
+      # 2) JDK 17 설치
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -31,15 +31,15 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      # 4) gradlew 권한
+      # 4) gradlew 실행 권한
       - name: Grant execute permission for Gradle
         run: chmod +x ./gradlew
 
-      # 5) JAR 빌드
+      # 5) Spring Boot JAR 빌드
       - name: Build Spring Boot JAR
         run: ./gradlew clean build -x test
 
-      # 6) 최상위에 JAR 복사 (Dockerfile이 기본 ARG로 인식하도록)
+      # 6) 최상위에 JAR 복사 (Dockerfile에서 바로 인식 가능하도록)
       - name: Prepare top-level jar
         run: |
           set -e
@@ -50,7 +50,7 @@ jobs:
           echo "Copied JAR to build/libs/app.jar"
           ls -la build/libs
 
-      # 7) 디버그(시크릿 길이만)
+      # 7) EC2 관련 시크릿 디버깅
       - name: Debug EC2 variables
         run: |
           echo "EC2_HOST: ${EC2_HOST:0:5}*****"
@@ -82,7 +82,7 @@ jobs:
             done
             echo "✅ ENV OK at $ENV_FILE"
 
-      # 9) EC2로 필수 파일 전송 (Dockerfile, docker-compose.yml, JAR만)
+      # 9) EC2에 필수 파일 전송
       - name: Copy project to EC2
         uses: appleboy/scp-action@v0.1.4
         with:
