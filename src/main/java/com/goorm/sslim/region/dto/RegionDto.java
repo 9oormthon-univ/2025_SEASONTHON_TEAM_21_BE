@@ -11,18 +11,11 @@ import lombok.NoArgsConstructor;
 @Builder
 public class RegionDto {
 
-	private Long regionId; 			// 지역 PK (기본 키)
-	
-    private String regionSiName; 	// 시/도명
-    
-    private String regionSggName; 	// 시군구명
-    
-    private String regionSggCode; 	// 시군구 코드
-    
-    private String lawdCd; 			// 국토교통부 API 코드
-    
-    private String regionKcaCode; 	// 한국소비자원 API 코드
-    
-    private String regionStcisCode; // 교통카드 API 코드
+	private String emd_nm;   // 읍면동 이름
+    private String ctpv_cd;  // 시/도 코드
+    private String ctpv_nm;  // 시/도 이름
+    private String sgg_cd;   // 시군구 코드 (법정동코드 5자리)
+    private String sgg_nm;   // 시군구 이름
+    private String emd_cd;   // 읍면동 코드 (10자리)
 	
 }
