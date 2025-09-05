@@ -14,21 +14,17 @@ ENV TZ=Asia/Seoul \
     JAVA_TOOL_OPTIONS="-XX:+ExitOnOutOfMemoryError -XX:MaxRAMPercentage=75 -Duser.timezone=Asia/Seoul -Dfile.encoding=UTF-8"
 
 # 비루트 계정 추가 (보안 목적)
-RUN useradd -r -s /sbin/nologin appuser
+RUN groupadd -r appuser && useradd -r -g appuser -s /usr/sbin/nologin appuser
 
 # 작업 디렉토리
 WORKDIR /app
 
-# 호스트에서 미리 빌드한 jar 파일만 복사
-ARG JAR_FILE=build/libs/*.jar
-COPY ${JAR_FILE} app.jar
+# ✅ 오직 고정된 산출물만 복사 (Actions가 생성하는 build/libs/app.jar)
+COPY build/libs/app.jar app.jar
 
-# jar 파일 권한을 비루트 계정으로 변경
+# 권한
 RUN chown -R appuser:appuser /app
 USER appuser
-
-# EXPOSE는 문서화용, 실 노출은 docker-compose에서 결정
-# EXPOSE 8080
 
 # Spring Boot 실행
 ENTRYPOINT ["java","-jar","/app/app.jar"]

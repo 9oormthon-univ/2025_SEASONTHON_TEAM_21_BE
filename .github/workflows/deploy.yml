@@ -18,26 +18,20 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Build Spring Boot JAR
+      # ✅ 부트 JAR만 빌드 (plain JAR 생성 안 함)
+      - name: Build Spring Boot bootJar
         run: |
           chmod +x ./gradlew
-          ./gradlew clean build -x test
+          ./gradlew clean bootJar -x test
+          ls -la build/libs
 
-      - name: Prepare top-level jar
+      # ✅ 산출물 존재 확인
+      - name: Assert bootJar exists
         run: |
           set -e
-          mkdir -p build/libs
-          JAR=$(find . -type f -path "*/build/libs/*.jar" | head -1)
-          [ -z "$JAR" ] && { echo "No jar under */build/libs"; exit 1; }
-          cp -f "$JAR" build/libs/app.jar
+          [ -f build/libs/app.jar ] || { echo "app.jar not found"; ls -la build/libs; exit 1; }
 
-      - name: Assert files exist before scp
-        run: |
-          set -e
-          [ -f Dockerfile ] || { echo "Dockerfile missing"; exit 1; }
-          [ -f docker-compose.yml ] || { echo "docker-compose.yml missing"; exit 1; }
-          [ -f build/libs/app.jar ] || { echo "app.jar missing"; exit 1; }
-
+      # 필요 파일 전송
       - name: Copy compose/Dockerfile/app.jar to EC2
         uses: appleboy/scp-action@v0.1.4
         with:
@@ -48,6 +42,7 @@ jobs:
           target:   "/home/${{ secrets.EC2_USER }}/SSLIM"
           strip_components: 0
 
+      # 배포
       - name: Deploy via docker compose (no env file)
         uses: appleboy/ssh-action@v1.2.0
         with:
@@ -63,7 +58,7 @@ jobs:
             docker compose down --remove-orphans || true
             docker compose up -d --build
 
-            # healthcheck 대기 (서비스명이 sslim-app이어야 함)
+            # healthcheck 대기 (컨테이너명: sslim-app)
             for i in {1..30}; do
               sleep 2
               state=$(docker inspect --format='{{.State.Health.Status}}' sslim-app 2>/dev/null || true)

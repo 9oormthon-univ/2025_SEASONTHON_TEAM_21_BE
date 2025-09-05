@@ -50,3 +50,13 @@ dependencies {
 tasks.named('test') {
     useJUnitPlatform()
 }
+
+// plain JAR 비활성화 (라이브러리용 jar 작업 끔)
+tasks.named('jar') {
+    enabled = false
+}
+
+// 부트 실행 JAR 파일명 고정
+tasks.named('bootJar') {
+    archiveFileName = 'app.jar'
+}
