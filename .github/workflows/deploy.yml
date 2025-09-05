@@ -39,7 +39,18 @@ jobs:
       - name: Build Spring Boot JAR
         run: ./gradlew clean build -x test
 
-      # 6) 디버그(시크릿 길이만)
+      # 6) 최상위에 JAR 복사 (Dockerfile이 기본 ARG로 인식하도록)
+      - name: Prepare top-level jar
+        run: |
+          set -e
+          mkdir -p build/libs
+          JAR=$(find . -type f -path "*/build/libs/*.jar" | head -1)
+          [ -z "$JAR" ] && { echo "❌ No jar found under */build/libs"; exit 1; }
+          cp -f "$JAR" build/libs/app.jar
+          echo "Copied JAR to build/libs/app.jar"
+          ls -la build/libs
+
+      # 7) 디버그(시크릿 길이만)
       - name: Debug EC2 variables
         run: |
           echo "EC2_HOST: ${EC2_HOST:0:5}*****"
@@ -50,7 +61,7 @@ jobs:
           EC2_USER:    ${{ secrets.EC2_USER }}
           EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
 
-      # 7) 서버 .env 검사 (/srv/app/current/.env)
+      # 8) 서버 .env 검사 (/srv/app/current/.env)
       - name: Guard required env on server
         uses: appleboy/ssh-action@v1.2.0
         with:
@@ -71,24 +82,22 @@ jobs:
             done
             echo "✅ ENV OK at $ENV_FILE"
 
-      # 8) EC2 전송: 루트 디렉토리(2025_SEASONTHON_TEAM_21_BE) 벗겨서 ~/SSLIM 로 투척
+      # 9) EC2로 필수 파일 전송 (Dockerfile, docker-compose.yml, JAR만)
       - name: Copy project to EC2
         uses: appleboy/scp-action@v0.1.4
         with:
-          host:         ${{ secrets.EC2_HOST }}
-          username:     ${{ secrets.EC2_USER }}
-          key:          ${{ secrets.EC2_SSH_KEY }}
+          host:     ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key:      ${{ secrets.EC2_SSH_KEY }}
           source: |
-            2025_SEASONTHON_TEAM_21_BE/**
-            !2025_SEASONTHON_TEAM_21_BE/.env
-            !2025_SEASONTHON_TEAM_21_BE/.git/**
-            !2025_SEASONTHON_TEAM_21_BE/.github/**
-            !2025_SEASONTHON_TEAM_21_BE/node_modules/**
+            Dockerfile
+            docker-compose.yml
+            build/libs/app.jar
           target: "/home/${{ secrets.EC2_USER }}/SSLIM"
-          strip_components: 1
+          strip_components: 0
           debug: true
 
-      # 9) 서버에서 docker compose 실행 (~/SSLIM + 외부 ENV 파일)
+      # 10) 서버에서 docker compose 실행
       - name: SSH deploy (docker compose up --build)
         uses: appleboy/ssh-action@v1.2.0
         with:
