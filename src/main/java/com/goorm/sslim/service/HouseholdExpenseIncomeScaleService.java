@@ -51,6 +51,7 @@ public class HouseholdExpenseIncomeScaleService {
             // 곱셈 후 반올림 정수화
             ScaledHouseholdExpenseResponse dto = ScaledHouseholdExpenseResponse.builder()
                     .group(g)
+                    .income(qi.getBoundary())
                     .ratio(ratio)
                     .foodCost(scale(avg.getFoodCost(), ratio))
                     .rentMonthly(scale(avg.getRentMonthly(), ratio))

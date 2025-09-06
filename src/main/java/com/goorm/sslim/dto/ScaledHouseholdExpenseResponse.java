@@ -9,6 +9,7 @@ import lombok.Value;
 public class ScaledHouseholdExpenseResponse {
     String group;                 // "1분위" ~ "4분위"
     BigDecimal ratio;             // (해당분위 경계 / 3분위 경계), 소수 유지
+    Long income;
 
     Integer foodCost;
     Integer rentMonthly;
