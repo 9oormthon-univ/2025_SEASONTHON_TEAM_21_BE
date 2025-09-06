@@ -22,8 +22,10 @@ public class ComparisonService {
 
     public ComparisonResponseDto getAvgCosts(ComparisonRequestDto dto) {
 
-        HouseholdExpense avgExpenses = householdExpenseRepository.findByAgeGroup(dto.getMyAgeGroup())
-                .orElseThrow(() -> new NoSuchElementException("해당 연령대의 평균 지출 데이터를 찾을 수 없습니다: " + dto.getMyAgeGroup()));
+        AgeGroup myAgeGroup = getMyAgeGroup(dto.getMyAge());
+
+        HouseholdExpense avgExpenses = householdExpenseRepository.findByAgeGroup(myAgeGroup)
+                .orElseThrow(() -> new NoSuchElementException("해당 연령대의 평균 지출 데이터를 찾을 수 없습니다: " + myAgeGroup));
 
         int myIncome = getMyIncome(dto.getMyIncomeCost());
 
@@ -37,7 +39,7 @@ public class ComparisonService {
         long recommendedRecreationCultureCost = Math.round(avgExpenses.getRecreationCultureCost() * myCoefficient);
 
         return ComparisonResponseDto.builder()
-                .ageGroup(dto.getMyAgeGroup())
+                .ageGroup(myAgeGroup)
                 .myIncomeCost(dto.getMyIncomeCost()) // 소득은 사용자의 입력값을 그대로 사용
                 .avgHouseCost(recommendedHouseCost)
                 .avgFoodCost(recommendedFoodCost)
@@ -79,5 +81,15 @@ public class ComparisonService {
             }
         }
         return 5;
+    }
+
+    public AgeGroup getMyAgeGroup(Integer myAge) {
+        if (myAge >= 19 && myAge <= 24) {
+            return AgeGroup.LOW;
+        } else if (myAge >= 25 && myAge <= 29) {
+            return AgeGroup.MIDDLE;
+        } else {
+            return AgeGroup.HIGH;
+        }
     }
 }

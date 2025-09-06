@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 @Data
 public class ComparisonRequestDto {
 
-    AgeGroup myAgeGroup;
+    Integer myAge;
     Long myIncomeCost;
     Long myHouseCost;
     Long myFoodCost;
