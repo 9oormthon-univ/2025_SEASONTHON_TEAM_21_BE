@@ -9,8 +9,6 @@
 .Trashes
 Thumbs.db
 
-application.yml
-
 # 로그 파일
 *.log
 *.log.*
