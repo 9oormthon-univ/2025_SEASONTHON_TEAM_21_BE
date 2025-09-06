@@ -30,15 +30,16 @@ public class IncomeService {
     private String apiKey;
     
     private static final Map<Integer, String> TOP_PERCENT_TO_GROUP = Map.of(
-            100, "1분위",
-            80,  "2분위",
-            60,  "3분위",
-            40,  "4분위",
-            20,  "5분위"
+            80,  "1분위",
+            60,  "2분위",
+            40,  "3분위",
+            20,  "4분위",
+            0, "5분위"
     );
-    
+
     private static final Pattern TOP_PATTERN = Pattern.compile("(\\d+(?:\\.\\d+)?)%");
-    
+    //private static final Pattern TOP_PATTERN = Pattern.compile("상위\\s*(\\d+(?:\\.\\d+)?)%");
+
     public void fetchAndSaveIncomeBoundaries() {
     	
         String url = "https://api.odcloud.kr/api/15082063/v1/uddi:f54973ac-a43f-4bcd-bc0c-99b91e1b0fde"
@@ -69,17 +70,22 @@ public class IncomeService {
                 if (!m.find()) continue;
 
                 double topPercentDouble = Double.parseDouble(m.group(1));
-                int topPercentRounded = (int) Math.round(topPercentDouble); // 1.0 -> 1 등 반올림
+                int topPercentRounded = (int) Math.round(topPercentDouble);
 
                 // 우리가 원하는 상위 % (100,80,60,40,20) 인지 체크
                 String quintile = TOP_PERCENT_TO_GROUP.get(topPercentRounded);
                 if (quintile == null) continue;
 
-                long incomeValue = item.path("근로소득금액").asLong(); // 경계값으로 사용할 소득
+                // 근로소득금액 (억 원 단위) → 원 단위 변환
+                long laborIncomeEok = item.path("총급여").asLong();
+                long person = item.path("인원").asLong();
+                long result = laborIncomeEok * 10000 / person /12 ;
+
+
                 Income e = new Income();
-                e.setYear(String.valueOf(Year.now().getValue())); // 필요시 파라미터로 넘겨 받아 세팅
+                e.setYear(String.valueOf(Year.now().getValue()));
                 e.setGroup(quintile);
-                e.setBoundary(incomeValue);
+                e.setBoundary(result);
 
                 pick.putIfAbsent(quintile, e);
             }
