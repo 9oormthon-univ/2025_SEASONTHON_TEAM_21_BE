@@ -7,10 +7,7 @@ import com.goorm.sslim.global.code.ResponseCode;
 import com.goorm.sslim.global.response.ApiResponse;
 import com.goorm.sslim.householdExpense.entity.AgeGroup;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RequiredArgsConstructor
 @RequestMapping("/comparison")
@@ -19,11 +16,10 @@ public class ComparisonController {
 
     private final ComparisonService comparisonService;
 
-    @GetMapping("/average")
+    @PostMapping("/average")
     public ApiResponse<ComparisonResponseDto> getAverageExpense(
-            @RequestParam ComparisonRequestDto comparisonRequestDto
-            ) {
-
+            @RequestBody ComparisonRequestDto comparisonRequestDto
+    ) {
         ComparisonResponseDto result = comparisonService.getAvgCosts(comparisonRequestDto);
 
         return ApiResponse.onSuccess(ResponseCode.OK, result);
