@@ -44,6 +44,16 @@ dependencies {
 
     implementation "org.springframework.boot:spring-boot-starter-actuator"
 
+    // Spring WebFlux (WebClient 사용)
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+
+    // JAXB API
+    implementation 'jakarta.xml.bind:jakarta.xml.bind-api'
+
+    // JAXB 구현체
+    implementation 'org.glassfish.jaxb:jaxb-runtime'
+
+    runtimeOnly 'com.h2database:h2'
 
 }
 

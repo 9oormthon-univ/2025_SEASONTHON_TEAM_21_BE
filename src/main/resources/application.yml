@@ -14,6 +14,7 @@ spring:
 
       naming:
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+
     show-sql: true # 콘솔에 SQL 출력(개발 편의)
     properties:
       hibernate:
@@ -33,6 +34,10 @@ management:
   endpoint:
     health:
       show-details: never
+
+custom:
+  api:
+    income-key: "2d4ea1d47d8bb9f264dac2c60c50527ce80b29540db5eaaa1e026f22f629e9de"
 
 #    defer-datasource-initialization: true
 #  sql:
