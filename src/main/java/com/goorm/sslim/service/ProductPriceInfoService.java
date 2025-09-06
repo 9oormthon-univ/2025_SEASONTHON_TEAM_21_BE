@@ -95,7 +95,7 @@ public class ProductPriceInfoService {
     public long getMonthlyFoodExpenditure() {
 
         double expenditure = 0L;
-        long deliveryExpenditure = 97000L;
+        long deliveryExpenditure = 99540L;
 
         Map<String, Integer> foodIdsAndCounts = new HashMap<>();
         foodIdsAndCounts.put("1206", 12);
