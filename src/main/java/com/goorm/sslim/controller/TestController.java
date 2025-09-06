@@ -24,9 +24,10 @@ public class TestController {
     private final ProductInfoService productInfoService;
 
     @GetMapping("/prices")
-    public ApiResponse<Void> test(@RequestParam String goodInspectDay, String goodId) throws JAXBException {
+    public ApiResponse<Long> test(@RequestParam String goodInspectDay, String goodId) throws JAXBException {
         productPriceInfoService.saveAveragePrice(goodInspectDay, goodId);
+        long expenditure = productPriceInfoService.getMonthlyFoodExpenditure();
 
-        return ApiResponse.onSuccess(ResponseCode.OK, null);
+        return ApiResponse.onSuccess(ResponseCode.OK, expenditure);
     }
 }

@@ -83,8 +83,8 @@ public class ProductPriceInfoService {
 
             // DB 저장
             FoodCost foodCost = FoodCost.builder()
-                    .Id(goodId)
-                    .goodName(productInfoService.findGoodName(goodId))
+                    .Id(necessaryItemIds[i])
+                    .goodName(productInfoService.findGoodName(necessaryItemIds[i]))
                     .avgGoodPrice(Math.round(average * 10D) / 10D)
                     .goodInspectDay(goodInspectDay)
                     .build();
@@ -100,8 +100,8 @@ public class ProductPriceInfoService {
         Map<String, Integer> foodIdsAndCounts = new HashMap<>();
         foodIdsAndCounts.put("1206", 12);
         foodIdsAndCounts.put("246", 7);
-        foodIdsAndCounts.put("874", 2);
-        foodIdsAndCounts.put("238", 3);
+        foodIdsAndCounts.put("874", 15);
+        foodIdsAndCounts.put("238", 2);
         foodIdsAndCounts.put("1436", 1);
         foodIdsAndCounts.put("1263", 5);
         foodIdsAndCounts.put("1598", 1);
