@@ -52,6 +52,9 @@ dependencies {
 
     // JAXB 구현체
     implementation 'org.glassfish.jaxb:jaxb-runtime'
+    
+    runtimeOnly 'com.h2database:h2'
+    
 }
 
 tasks.named('test') {
