@@ -33,12 +33,40 @@ dependencies {
 
     runtimeOnly 'com.mysql:mysql-connector-j'
 
-    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0'
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.12'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+    implementation 'io.netty:netty-resolver-dns-native-macos:4.1.99.Final:osx-x86_64'
+    implementation 'io.netty:netty-resolver-dns-native-macos:4.1.99.Final:osx-aarch_64'
+
+    implementation "org.springframework.boot:spring-boot-starter-actuator"
+
+    // Spring WebFlux (WebClient 사용)
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+
+    // JAXB API
+    implementation 'jakarta.xml.bind:jakarta.xml.bind-api'
+
+    // JAXB 구현체
+    implementation 'org.glassfish.jaxb:jaxb-runtime'
+
+    runtimeOnly 'com.h2database:h2'
+
 }
 
 tasks.named('test') {
     useJUnitPlatform()
+}
+
+// plain JAR 비활성화 (라이브러리용 jar 작업 끔)
+tasks.named('jar') {
+    enabled = false
+}
+
+// 부트 실행 JAR 파일명 고정
+tasks.named('bootJar') {
+    archiveFileName = 'app.jar'
 }

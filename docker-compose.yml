@@ -1,0 +1,35 @@
+services:
+  app:
+    container_name: sslim-app
+
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: sslim-app:hardcoded            #  .env의 APP_IMAGE
+
+    ports:
+      - "8080:8080"
+
+#    env_file:
+#      - ./.env
+
+    environment:
+      DB_URL: jdbc:mysql://seasonthon.cv8yu8ywovhc.ap-northeast-2.rds.amazonaws.com:3306/sslim_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul           # DB 연결 URL
+      DB_USER: admin        # DB 계정
+      DB_PASSWORD: dbtjddus12  # DB 비밀번호
+
+      SPRING_DATASOURCE_HIKARI_MAX_LIFETIME: "28700000"   # ✅ 언더스코어 사용
+      SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE: "2"          # (선택)
+      SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: "10"    # (선택)
+
+      TZ: Asia/Seoul
+
+
+    restart: unless-stopped
+
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health || exit 1" ]
+      interval: 10s
+      timeout: 3s
+      retries: 30
+      start_period: 20s
