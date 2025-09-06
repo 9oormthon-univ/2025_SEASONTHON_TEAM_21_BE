@@ -2,10 +2,11 @@ package com.goorm.sslim.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.goorm.sslim.entity.PublicTransportStat;
-import com.goorm.sslim.global.response.PublicTransportStatRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -17,8 +18,13 @@ import java.util.*;
 @RequiredArgsConstructor
 public class PublicTransportService {
 
-    private final PublicTransportStatRepository repo;
     private final WebClient web = WebClient.create("https://api.odcloud.kr/api/15066825/v1");
+
+    @Value("${spring.openapi.public-transport.service-key}")
+    private String serviceKey;
+
+    @PersistenceContext
+    private EntityManager em;
 
     // 한글 지역명 <-> 코드 매핑
     private enum Region {
@@ -37,8 +43,8 @@ public class PublicTransportService {
     @Transactional
     public void ingestPivot() {
         JsonNode root = web.get()
-                .uri(uri -> uri.path("/uddi:351668f4-a029-4006-8f77-b6c02e422165")
-                        .queryParam("serviceKey", "beea3b20dcc31046c894f13d45fee96bf3b85d023319980a8878e6a47094e77d")
+                .uri(u -> u.path("/uddi:351668f4-a029-4006-8f77-b6c02e422165")
+                        .queryParam("serviceKey", serviceKey)
                         .queryParam("perPage", 1000)
                         .build())
                 .retrieve()
@@ -47,7 +53,7 @@ public class PublicTransportService {
 
         ArrayNode data = (ArrayNode) root.path("data");
 
-        // 지역별 누적 버퍼
+        // 지역별 누적(필요 컬럼만)
         Map<Region, Acc> acc = new EnumMap<>(Region.class);
         for (Region r : Region.values()) acc.put(r, new Acc(r));
 
@@ -66,61 +72,55 @@ public class PublicTransportService {
             }
         }
 
-        // 지역별 UPSERT
-        for (Acc a : acc.values()) {
-            repo.upsert(
-                    a.region.name(),            // region_code
-                    a.region.ko(),              // region_name
-                    a.weeklyUsageCnt,           // BigDecimal
-                    a.monthlyCost,              // Integer
-                    a.busPct,                   // BigDecimal
-                    a.metroPct,                 // BigDecimal
-                    a.cardUsagePct,             // BigDecimal
-                    a.infoServiceUsagePct,      // BigDecimal
-                    a.accessTime,               // BigDecimal
-                    a.transferServiceUsagePct,  // BigDecimal
-                    a.transferCount,            // BigDecimal (엔티티가 BigDecimal이므로 유지)
-                    a.transferMoveTime,         // BigDecimal
-                    a.transferWaitTime          // BigDecimal
-            );
+        upsertBatchMinimal(acc.values());
+    }
+
+    // 필요한 지표만 매핑
+    private void mapMetric(Acc a, String metric, String raw) {
+        String m = metric.replace(" ", "_");
+        switch (m) {
+            case "1주간대중교통이용횟수(회)" -> a.weeklyUsageCnt = parseDecimal(raw);
+            case "한달평균대중교통비용(원)"   -> a.monthlyCost   = parseInt(raw);
+            default -> {}
         }
     }
 
-    // 누적 구조체 (엔티티 필드 타입과 일치)
+    private void upsertBatchMinimal(Collection<Acc> values) {
+        final String sql = """
+            INSERT INTO public_transport_stats
+              (region_code, region_name, weekly_usage_cnt, monthly_cost)
+            VALUES
+              (:regionCode, :regionName, :weeklyUsageCnt, :monthlyCost)
+            ON DUPLICATE KEY UPDATE
+              region_name = VALUES(region_name),
+              weekly_usage_cnt = VALUES(weekly_usage_cnt),
+              monthly_cost = VALUES(monthly_cost)
+            """;
+
+        int i = 0;
+        for (Acc a : values) {
+            if (a.weeklyUsageCnt == null && a.monthlyCost == null) continue;
+
+            em.createNativeQuery(sql)
+                    .setParameter("regionCode", a.region.name())
+                    .setParameter("regionName", a.region.ko())
+                    .setParameter("weeklyUsageCnt", a.weeklyUsageCnt)
+                    .setParameter("monthlyCost", a.monthlyCost)
+                    .executeUpdate();
+
+            if (++i % 50 == 0) { // 배치 플러시/클리어로 메모리 관리
+                em.flush();
+                em.clear();
+            }
+        }
+    }
+
     @Getter
     private static class Acc {
         final Region region;
-        BigDecimal weeklyUsageCnt;        // 주간 이용 횟수(엔티티가 BigDecimal이므로 그대로)
-        Integer    monthlyCost;           // 한달 평균 비용(정수)
-        BigDecimal busPct;                // 버스 이용률
-        BigDecimal metroPct;              // 지하철 이용률
-        BigDecimal cardUsagePct;          // 카드 사용률
-        BigDecimal infoServiceUsagePct;   // 정보제공서비스 이용률
-        BigDecimal accessTime;            // 접근 소요 시간
-        BigDecimal transferServiceUsagePct; // 환승 서비스 이용률
-        BigDecimal transferCount;         // 환승 횟수(엔티티가 BigDecimal)
-        BigDecimal transferMoveTime;      // 환승 이동 시간
-        BigDecimal transferWaitTime;      // 환승 대기 시간
+        BigDecimal weeklyUsageCnt;
+        Integer    monthlyCost;
         Acc(Region region){ this.region = region; }
-    }
-
-    // 지표명에 따라 올바른 타입으로 파싱/적재
-    private void mapMetric(Acc a, String metric, String raw) {
-        String m = metric.replace(" ", "_"); // "주이용교통수단 도시철도(%)" 대응
-        switch (m) {
-            case "1주간대중교통이용횟수(회)" -> a.weeklyUsageCnt = parseDecimal(raw);
-            case "한달평균대중교통비용(원)"   -> a.monthlyCost   = parseInt(raw);       // 정수
-            case "주이용교통수단_버스(%)"     -> a.busPct        = parseDecimal(raw);
-            case "주이용교통수단_도시철도(%)" -> a.metroPct      = parseDecimal(raw);
-            case "교통카드이용률(%)"           -> a.cardUsagePct  = parseDecimal(raw);
-            case "정보제공서비스이용률(%)"      -> a.infoServiceUsagePct = parseDecimal(raw);
-            case "접근소요시간(분)"             -> a.accessTime    = parseDecimal(raw);
-            case "환승서비스이용률(%)"          -> a.transferServiceUsagePct = parseDecimal(raw);
-            case "환승횟수(회)"                 -> a.transferCount = parseDecimal(raw); // 엔티티가 BigDecimal
-            case "환승이동시간(분)"             -> a.transferMoveTime = parseDecimal(raw);
-            case "환승대기시간(분)"             -> a.transferWaitTime = parseDecimal(raw);
-            default -> {}
-        }
     }
 
     private BigDecimal parseDecimal(String raw) {
