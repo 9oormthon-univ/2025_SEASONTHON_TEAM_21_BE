@@ -65,7 +65,6 @@ public class ProductPriceInfoService {
 
         for(int i = 0; i < 7; i++) {
             List<ProductPriceInfoDTO> priceList = fetchProductPriceInfo(goodInspectDay, necessaryItemIds[i]);
-            System.out.println("=======" + i);
 
             if (priceList == null || priceList.isEmpty()) {
                 log.warn("No price data found for goodId: {}", goodId);
@@ -96,6 +95,7 @@ public class ProductPriceInfoService {
     public long getMonthlyFoodExpenditure() {
 
         double expenditure = 0L;
+        long deliveryExpenditure = 97000L;
 
         Map<String, Integer> foodIdsAndCounts = new HashMap<>();
         foodIdsAndCounts.put("1206", 12);
@@ -109,9 +109,8 @@ public class ProductPriceInfoService {
         List<FoodCost> foodCosts = foodCostRepository.findAllByIdIn(foodIdsAndCounts.keySet());
         for (FoodCost foodCost: foodCosts) {
            expenditure += foodCost.getAvgGoodPrice() * foodIdsAndCounts.get(foodCost.getId());
-            System.out.println("expenditure: " + expenditure);
         }
 
-        return (long)expenditure;
+        return (long)expenditure + deliveryExpenditure;
     }
 }
