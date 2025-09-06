@@ -28,8 +28,6 @@ public class ProductPriceInfoService {
 
     @Value("${spring.openapi.product-price.service-key}")
     private String serviceKey;
-    private final String[] necessaryItemIds = {"1206", "246", "874", "238", "1436"
-            , "1263", "1598"};
 
     private static final String BASE_URL =
             "http://openapi.price.go.kr/openApiImpl/ProductPriceInfoService/getProductPriceInfoSvc.do";
@@ -63,9 +61,7 @@ public class ProductPriceInfoService {
     @Transactional
     public void saveAveragePrice(String goodInspectDay, String goodId) throws JAXBException {
 
-        for(int i = 0; i < 7; i++) {
-            List<ProductPriceInfoDTO> priceList = fetchProductPriceInfo(goodInspectDay, necessaryItemIds[i]);
-            System.out.println("=======" + i);
+            List<ProductPriceInfoDTO> priceList = fetchProductPriceInfo(goodInspectDay, goodId);
 
             if (priceList == null || priceList.isEmpty()) {
                 log.warn("No price data found for goodId: {}", goodId);
@@ -83,14 +79,13 @@ public class ProductPriceInfoService {
 
             // DB 저장
             FoodCost foodCost = FoodCost.builder()
-                    .Id(necessaryItemIds[i])
-                    .goodName(productInfoService.findGoodName(necessaryItemIds[i]))
+                    .Id(goodId)
+                    .goodName(productInfoService.findGoodName(goodId))
                     .avgGoodPrice(Math.round(average * 10D) / 10D)
                     .goodInspectDay(goodInspectDay)
                     .build();
 
             foodCostRepository.save(foodCost);
-        }
     }
 
     public long getMonthlyFoodExpenditure() {
@@ -109,7 +104,6 @@ public class ProductPriceInfoService {
         List<FoodCost> foodCosts = foodCostRepository.findAllByIdIn(foodIdsAndCounts.keySet());
         for (FoodCost foodCost: foodCosts) {
            expenditure += foodCost.getAvgGoodPrice() * foodIdsAndCounts.get(foodCost.getId());
-            System.out.println("expenditure: " + expenditure);
         }
 
         return (long)expenditure;
