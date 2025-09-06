@@ -1,7 +1,7 @@
-package com.goorm.sslim.repository;
+package com.goorm.sslim.householdExpense.repository;
 
-import com.goorm.sslim.entity.AgeGroup;
-import com.goorm.sslim.entity.HouseholdExpense;
+import com.goorm.sslim.householdExpense.entity.AgeGroup;
+import com.goorm.sslim.householdExpense.entity.HouseholdExpense;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;

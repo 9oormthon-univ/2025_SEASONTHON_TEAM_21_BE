@@ -1,4 +1,4 @@
-package com.goorm.sslim.entity;
+package com.goorm.sslim.householdExpense.entity;
 
 public enum AgeGroup {
     LOW,   // 만19세-24세

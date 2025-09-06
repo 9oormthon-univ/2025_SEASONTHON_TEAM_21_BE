@@ -1,11 +1,11 @@
-package com.goorm.sslim.service;
+package com.goorm.sslim.householdExpense.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.goorm.sslim.entity.AgeGroup;
-import com.goorm.sslim.entity.HouseholdExpense;
-import com.goorm.sslim.repository.HouseholdExpenseRepository;
+import com.goorm.sslim.householdExpense.entity.AgeGroup;
+import com.goorm.sslim.householdExpense.entity.HouseholdExpense;
+import com.goorm.sslim.householdExpense.repository.HouseholdExpenseRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;

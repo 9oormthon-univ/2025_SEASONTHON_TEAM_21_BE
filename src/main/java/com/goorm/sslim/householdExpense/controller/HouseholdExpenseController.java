@@ -1,14 +1,11 @@
-package com.goorm.sslim.controller;
+package com.goorm.sslim.householdExpense.controller;
 
-import com.goorm.sslim.dto.HouseholdExpenseResponse;
-import com.goorm.sslim.entity.AgeGroup;
-import com.goorm.sslim.entity.HouseholdExpense;
-import com.goorm.sslim.repository.HouseholdExpenseRepository;
-import com.goorm.sslim.service.HouseholdExpenseIngestService;
+import com.goorm.sslim.householdExpense.dto.HouseholdExpenseResponse;
+import com.goorm.sslim.householdExpense.entity.AgeGroup;
+import com.goorm.sslim.householdExpense.repository.HouseholdExpenseRepository;
+import com.goorm.sslim.householdExpense.service.HouseholdExpenseIngestService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 

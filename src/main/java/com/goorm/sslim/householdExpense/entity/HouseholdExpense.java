@@ -1,4 +1,4 @@
-package com.goorm.sslim.entity;
+package com.goorm.sslim.householdExpense.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;

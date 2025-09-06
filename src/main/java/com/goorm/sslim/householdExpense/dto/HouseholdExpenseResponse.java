@@ -1,7 +1,7 @@
-package com.goorm.sslim.dto;
+package com.goorm.sslim.householdExpense.dto;
 
-import com.goorm.sslim.entity.AgeGroup;
-import com.goorm.sslim.entity.HouseholdExpense;
+import com.goorm.sslim.householdExpense.entity.AgeGroup;
+import com.goorm.sslim.householdExpense.entity.HouseholdExpense;
 import lombok.Value;
 
 @Value
