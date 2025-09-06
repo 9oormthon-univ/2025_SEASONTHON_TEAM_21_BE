@@ -35,7 +35,6 @@ public class ProductInfoService {
             "http://openapi.price.go.kr/openApiImpl/ProductPriceInfoService/getProductInfoSvc.do";
     Map<String, String> goodIdNameMap;
 
-    @PostConstruct  // 앱 시작 후 한 번 실행
     public void init() throws JAXBException {
         fetchProductInfo();
         log.info("Product map initialized with {} items", goodIdNameMap.size());
